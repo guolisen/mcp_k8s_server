@@ -1,24 +1,37 @@
+#!/usr/bin/env python
+
 from setuptools import setup, find_packages
 
-setup(
-    name="mcp_k8s_server",
-    version="0.1.0",
-    packages=find_packages(where="src"),
-    package_dir={"": "src"},
-    install_requires=[
-        "modelcontextprotocol==0.1.0",
-        "kubernetes==29.0.0",
-        "PyYAML==6.0.1",
-        "prometheus-client==0.17.1",
-        "tabulate==0.9.0",
-        "rich==13.6.0",
-    ],
-    python_requires=">=3.8",
-    description="MCP server for Kubernetes cluster management",
-    author="Cline",
-    entry_points={
-        "console_scripts": [
-            "mcp-k8s-server=mcp_k8s_server.server:main",
+if __name__ == "__main__":
+    setup(
+        name="mcp-k8s-server",
+        version="0.1.0",
+        packages=[
+            "mcp_k8s_server",
+            "mcp_k8s_server.k8s",
+            "mcp_k8s_server.tools",
+            "mcp_k8s_server.prompts",
+            "mcp_k8s_server.resources",
         ],
-    },
-)
+        package_dir={"": "."},
+        exclude_package_data={
+            "": ["k8s/*", "config/*", "docs/*"],
+        },
+        include_package_data=True,
+        install_requires=[
+            "mcp>=1.6.0",
+            "kubernetes>=30.0.0",
+            "pyyaml>=6.0.1",
+            "httpx>=0.28.1",
+            "click>=8.1.8",
+            "pydantic>=2.11.1",
+            "pydantic-settings>=2.8.1",
+            "pip>=25.0.1",
+        ],
+        entry_points={
+            "console_scripts": [
+                "mcp-k8s-server=mcp_k8s_server.main:main",
+            ],
+        },
+        python_requires=">=3.13",
+    )

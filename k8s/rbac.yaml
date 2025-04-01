@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mcp-k8s-server
+  labels:
+    app: mcp-k8s-server
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mcp-k8s-server
+  labels:
+    app: mcp-k8s-server
+rules:
+# Allow read access to most resources
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets", "namespaces", "nodes", "persistentvolumes", "persistentvolumeclaims", "events"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list"]
+# Allow operations on resources
+- apiGroups: [""]
+  resources: ["pods", "pods/exec", "pods/log"]
+  verbs: ["create", "delete", "deletecollection", "patch", "update"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets", "daemonsets"]
+  verbs: ["create", "delete", "deletecollection", "patch", "update"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["create", "delete", "deletecollection", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mcp-k8s-server
+  labels:
+    app: mcp-k8s-server
+subjects:
+- kind: ServiceAccount
+  name: mcp-k8s-server
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: mcp-k8s-server
+  apiGroup: rbac.authorization.k8s.io

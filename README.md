@@ -1,181 +1,124 @@
 # MCP Kubernetes Server
 
-A Model Context Protocol (MCP) server for Kubernetes cluster management, monitoring, and status detection.
-
-## Overview
-
-The MCP Kubernetes Server provides interfaces to interact with Kubernetes clusters through the Model Context Protocol. It enables LLMs to:
-
-- Retrieve information about cluster resources (nodes, deployments, etc.)
-- Perform operations on the cluster (scaling, restarting, etc.)
-- Monitor cluster status and health
-- Detect and diagnose issues
+A Kubernetes management MCP (Model Context Protocol) server that provides interfaces for getting information about Kubernetes clusters, performing operations, monitoring status, and analyzing resources.
 
 ## Features
 
-### Resource Interfaces
-
-- **Nodes**: Get information about cluster nodes
-- **Deployments**: Manage and monitor deployments
-- **Services**: Access service details and status
-- **ConfigMaps/Secrets**: View configuration resources
-- **StatefulSets/DaemonSets**: Monitor stateful applications
-- **Jobs/CronJobs**: Track batch processing tasks
-- **Ingresses**: Access ingress configuration
-- **PersistentVolumes/PVCs**: Storage management
-
-### Operation Tools
-
-- **Scale Deployments**: Adjust the number of replicas
-- **Restart Deployments**: Rolling restarts
-- **Create Namespaces**: Organize resources
-- **Delete Resources**: Remove Kubernetes objects
-- **Get Logs**: View container logs
-- **Execute Commands**: Run commands in containers
-
-### Monitoring Tools
-
-- **Cluster Health**: Overall health status
-- **Resource Usage**: CPU and memory metrics
-- **Pod Resource Usage**: Container resource utilization
-- **Events**: Track cluster events
-- **Resource Description**: Detailed resource information
-
-### Status Detection Tools
-
-- **Component Status**: Check cluster components
-- **Node Health**: Detailed node diagnostics
-- **Deployment Health**: Verify deployment status
-- **API Server Health**: API server connectivity
-- **Resource Quotas**: Track resource usage limits
-- **Cluster Diagnostics**: Comprehensive health check
+- **Cluster Information**: Get detailed information about Kubernetes resources (pods, deployments, services, etc.)
+- **Cluster Operations**: Perform operations on Kubernetes resources (create, update, delete, scale, etc.)
+- **Monitoring**: Monitor the status of Kubernetes clusters and resources
+- **Analysis**: Analyze Kubernetes resources and provide recommendations
+- **Prompts**: Includes prompts for common Kubernetes analysis tasks
 
 ## Installation
 
-### Prerequisites
+### From Source
 
-- Python 3.8+
-- Access to a Kubernetes cluster
-- `kubectl` installed and configured
+```bash
+git clone https://github.com/yourusername/mcp-k8s-server.git
+cd mcp-k8s-server
+pip install -e .
+```
 
-### Setup
+### Using pip
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/mcp_k8s_server.git
-   cd mcp_k8s_server
-   ```
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Install the package:
-   ```bash
-   pip install -e .
-   ```
+```bash
+pip install mcp-k8s-server
+```
 
 ## Usage
 
-### Starting the Server
-
-Run the MCP server with:
+### Running Directly
 
 ```bash
-python -m src.server
+# Run with default settings
+mcp-k8s-server
+
+# Specify transport type
+mcp-k8s-server --transport sse
+
+# Specify port for SSE transport
+mcp-k8s-server --port 8000
+
+# Specify config file
+mcp-k8s-server --config /path/to/config.yaml
 ```
 
-Options:
-- `--config PATH`: Path to configuration file
-- `--kubeconfig PATH`: Path to kubeconfig file (overrides config file)
-- `--bind-ip IP`: IP address to bind to (overrides config file)
-- `--bind-port PORT`: Port to bind to (overrides config file)
-- `--mode {stdio,network}`: Server mode (overrides config file)
-- `--debug`: Enable debug logging
+### Using Docker
+
+```bash
+# Build the Docker image
+docker build -t mcp-k8s-server .
+
+# Run the Docker container
+docker run -p 8000:8000 -v ~/.kube:/home/mcp/.kube mcp-k8s-server
+```
+
+### Deploying to Kubernetes
+
+```bash
+# Apply the Kubernetes manifests
+kubectl apply -f k8s/
+```
+
+## Configuration
+
+The server can be configured using a YAML configuration file, environment variables, or command-line arguments.
 
 ### Configuration File
 
-The server can be configured using a YAML configuration file. Create a `config.yaml` file with the following structure:
-
 ```yaml
+# config.yaml
 server:
-  bind_ip: "0.0.0.0"  # IP address to bind to
-  bind_port: 8080     # Port to bind to
-  mode: "network"     # "network" or "stdio"
+  name: mcp-k8s-server
+  transport: both  # stdio, sse, or both
+  port: 8000
+  host: 0.0.0.0
 
 kubernetes:
-  kubeconfig_path: null  # Path to kubeconfig file, null for default
-
-logging:
-  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-  file: null     # Path to log file, null for stderr only
+  config_path: ~/.kube/config
+  context: default
+  namespace: default
 ```
 
-To use the configuration file:
+### Environment Variables
 
-```bash
-python -m src.server --config config.yaml
-```
+- `MCP_K8S_SERVER_TRANSPORT`: Transport type (stdio, sse, or both)
+- `MCP_K8S_SERVER_PORT`: Port for SSE transport
+- `MCP_K8S_SERVER_HOST`: Host for SSE transport
+- `MCP_K8S_SERVER_CONFIG_PATH`: Path to Kubernetes config file
+- `MCP_K8S_SERVER_CONTEXT`: Kubernetes context
+- `MCP_K8S_SERVER_NAMESPACE`: Kubernetes namespace
 
-### MCP Configuration
+## MCP Tools
 
-Add the server to your MCP configuration file:
+The server provides the following MCP tools:
 
-```json
-{
-  "mcpServers": {
-    "kubernetes": {
-      "command": "python",
-      "args": ["-m", "src.server", "--config", "/path/to/config.yaml"],
-      "env": {
-        "KUBECONFIG": "/path/to/kubeconfig"
-      },
-      "disabled": false,
-      "autoApprove": []
-    }
-  }
-}
-```
+### Resource Information
 
-For network mode, you can also specify:
+- `get_resources`: Get a list of resources of a specific type
+- `get_resource`: Get detailed information about a specific resource
+- `get_resource_status`: Get the status of a specific resource
+- `get_resource_events`: Get events related to a specific resource
+- `get_resource_logs`: Get logs for a specific resource
 
-```json
-{
-  "mcpServers": {
-    "kubernetes": {
-      "command": "python",
-      "args": ["-m", "src.server", "--mode", "network", "--bind-ip", "127.0.0.1", "--bind-port", "8080"],
-      "env": {
-        "KUBECONFIG": "/path/to/kubeconfig"
-      },
-      "disabled": false,
-      "autoApprove": []
-    }
-  }
-}
-```
+### Resource Operations
 
-## Authentication
+- `create_resource`: Create a new resource
+- `update_resource`: Update an existing resource
+- `delete_resource`: Delete a resource
+- `scale_deployment`: Scale a deployment
+- `restart_deployment`: Restart a deployment
+- `execute_command`: Execute a command in a pod
 
-The server uses your default Kubernetes configuration. Make sure you have proper permissions to access and manage your cluster.
+### Monitoring
 
-## Resource URI Format
-
-Resources follow this URI format:
-- `kubernetes://[resource_type]` - All resources of a type
-- `kubernetes://[resource_type]/[namespace]` - Resources in a namespace
-- `kubernetes://[resource_type]/[namespace]/[name]` - Specific resource
-
-Examples:
-- `kubernetes://nodes` - All nodes
-- `kubernetes://deployments/default` - All deployments in default namespace
-- `kubernetes://deployments/kube-system/coredns` - Specific deployment
-
-## Tools
-
-Tools are available for various cluster operations, monitoring, and status detection. Each tool accepts specific parameters defined in the MCP interface.
+- `get_cluster_status`: Get the overall status of the cluster
+- `get_node_status`: Get the status of cluster nodes
+- `get_resource_metrics`: Get metrics for a specific resource
+- `get_cluster_metrics`: Get metrics for the entire cluster
+- `check_cluster_health`: Perform a comprehensive health check of the cluster and get a detailed summary
 
 ## License
 
-[Include license information here]
+MIT

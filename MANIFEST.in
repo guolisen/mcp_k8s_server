@@ -1,0 +1,24 @@
+# Include the README file
+include README.md
+
+# Include the license file
+include LICENSE.txt
+
+# Include the configuration files
+include config/config.yaml
+
+# Include the Kubernetes manifests
+include k8s/*.yaml
+
+# Include documentation
+include docs/*.md
+
+# Exclude the k8s, config, and docs directories from being treated as packages
+prune k8s
+prune config
+prune docs
+
+# Exclude __init__.py files in non-package directories
+exclude k8s/__init__.py
+exclude config/__init__.py
+exclude docs/__init__.py

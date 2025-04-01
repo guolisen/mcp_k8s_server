@@ -1,18 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "mcp-k8s-server"
 version = "0.1.0"
-description = "Add your description here"
+description = "Kubernetes management MCP server"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "debugpy>=1.8.13",
-    "kubernetes==29.0.0",
     "mcp>=1.6.0",
-    "modelcontextprotocol==0.1.0",
+    "kubernetes>=30.0.0",
+    "pyyaml>=6.0.1",
+    "httpx>=0.28.1",
+    "click>=8.1.8",
+    "pydantic>=2.11.1",
+    "pydantic-settings>=2.8.1",
     "pip>=25.0.1",
-    "prometheus-client==0.17.1",
-    "pyyaml==6.0.2",
-    "rich==13.8.1",
-    "setuptools>=78.1.0",
-    "tabulate==0.9.0",
+    "debugpy>=1.8.13",
 ]
+
+[project.scripts]
+mcp-k8s-server = "mcp_k8s_server.main:main"
+
+[tool.setuptools]
+include-package-data = true
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+include = ["mcp_k8s_server*"]
+exclude = ["k8s*", "config*", "docs*"]
+
+[tool.setuptools.exclude-package-data]
+"*" = ["*.pyc", "*.pyo", "*.pyd", "*.so", "*.dll", "*.egg-info", "*.egg", "build", "dist"]

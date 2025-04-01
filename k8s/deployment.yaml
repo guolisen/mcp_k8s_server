@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-k8s-server
+  labels:
+    app: mcp-k8s-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-k8s-server
+  template:
+    metadata:
+      labels:
+        app: mcp-k8s-server
+    spec:
+      serviceAccountName: mcp-k8s-server
+      containers:
+      - name: mcp-k8s-server
+        image: mcp-k8s-server:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: TRANSPORT
+          value: "sse"
+        - name: PORT
+          value: "8000"
+        - name: HOST
+          value: "0.0.0.0"
+        - name: CONFIG_PATH
+          value: "/app/config/config.yaml"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+      volumes:
+      - name: config-volume
+        configMap:
+          name: mcp-k8s-server-config

@@ -1,0 +1,59 @@
+# MCP Kubernetes Server Configuration
+
+server:
+  name: mcp-k8s-server
+  transport: both  # stdio, sse, or both
+  port: 8000
+  host: 0.0.0.0
+
+kubernetes:
+  # Path to kubeconfig file
+  # If empty, will try to use in-cluster config when running in Kubernetes
+  # or ~/.kube/config when running locally
+  config_path: ""
+  
+  # Kubernetes context to use
+  # If empty, will use the current context from kubeconfig
+  context: ""
+  
+  # Default namespace
+  namespace: default
+  
+  # Resource types to include
+  resource_types:
+    - pods
+    - deployments
+    - services
+    - configmaps
+    - secrets
+    - persistentvolumeclaims
+    - persistentvolumes
+    - nodes
+    - namespaces
+    - events
+    - ingresses
+    - statefulsets
+    - daemonsets
+    - jobs
+    - cronjobs
+    - replicasets
+
+monitoring:
+  # Enable monitoring features
+  enabled: true
+  
+  # Polling interval in seconds
+  interval: 30
+  
+  # Resources to monitor
+  resources:
+    - pods
+    - nodes
+    - deployments
+    
+  # Metrics to collect
+  metrics:
+    - cpu
+    - memory
+    - disk
+    - network
