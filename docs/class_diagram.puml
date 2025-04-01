@@ -1,0 +1,213 @@
+@startuml MCP Kubernetes Server Class Diagram
+
+' Main Server Class
+class KubernetesMcpServer {
+  - server : Server
+  - api_client : KubernetesApiClient
+  - kubectl_wrapper : KubectlWrapper
+  - uri_parser : ResourceUriParser
+  - resource_handlers : Dict
+  - operations : KubernetesOperations
+  - monitoring : KubernetesMonitoring
+  - status : KubernetesStatus
+  + __init__(kubeconfig_path)
+  - _register_handlers()
+  - _handle_error(error)
+  - _handle_read_resource(request)
+  + run()
+}
+
+' Kubernetes API Interface
+class KubernetesApiClient {
+  - api_client 
+  - core_v1_api
+  - apps_v1_api
+  - batch_v1_api
+  - networking_v1_api
+  - storage_v1_api
+  - rbac_v1_api
+  - custom_objects_api
+  + __init__(kubeconfig_path)
+  + get_nodes()
+  + get_namespaces()
+  + get_deployments(namespace)
+  + get_services(namespace)
+  + get_pods(namespace)
+  + get_config_maps(namespace)
+  + get_secrets(namespace)
+  + get_stateful_sets(namespace)
+  + get_daemon_sets(namespace)
+  + get_jobs(namespace)
+  + get_cron_jobs(namespace)
+  + get_ingresses(namespace)
+  + get_storage_classes()
+  + get_persistent_volumes()
+  + get_persistent_volume_claims(namespace)
+  + get_events(namespace)
+  + get_resource_quotas(namespace)
+  + get_cluster_role_bindings()
+  + get_cluster_health()
+  - _extract_node_info(node)
+  - _get_node_roles(labels)
+  - _get_node_internal_ip(addresses)
+  - _get_node_external_ip(addresses)
+}
+
+class KubectlWrapper {
+  - kubeconfig_path : str
+  + __init__(kubeconfig_path)
+  - _test_connection()
+  + execute_command(args, namespace, capture_output)
+  + get_nodes()
+  + get_namespaces()
+  + get_pods(namespace)
+  + get_deployments(namespace)
+  + get_services(namespace)
+  + get_events(namespace)
+  + create_resource(yaml_file)
+  + delete_resource(resource_type, resource_name, namespace)
+  + scale_deployment(deployment_name, replicas, namespace)
+  + exec_command_in_pod(pod_name, container_name, command, namespace)
+  + get_logs(pod_name, container_name, tail, namespace)
+  + describe_resource(resource_type, resource_name, namespace)
+  + get_resource_usage()
+  + get_pod_resource_usage(namespace)
+  + restart_deployment(deployment_name, namespace)
+  + get_rollout_status(resource_type, resource_name, namespace)
+  + create_namespace(namespace)
+  + get_cluster_info()
+  + get_component_statuses()
+  + get_all_resources(namespace)
+  + get_api_resources()
+}
+
+' Resource Handlers
+class ResourceUriParser {
+  + {static} parse_resource_uri(uri)
+  + {static} build_resource_uri(resource_type, namespace, name)
+}
+
+abstract class BaseResourceHandler {
+  # server : Server
+  # api_client : KubernetesApiClient
+  # kubectl_wrapper : KubectlWrapper
+  # uri_parser : ResourceUriParser
+  + __init__(server, api_client, kubectl_wrapper)
+  + {abstract} register_resources()
+  + get_resource_info(resource_type, description)
+  + get_resource_templates(resource_type, description)
+  + format_json_response(data)
+  + {abstract} handle_resource_request(uri, method)
+}
+
+class NodeResourceHandler {
+  + __init__(server, api_client, kubectl_wrapper)
+  + register_resources()
+  + handle_resource_request(uri, method)
+}
+
+class DeploymentResourceHandler {
+  + __init__(server, api_client, kubectl_wrapper)
+  + register_resources()
+  + handle_resource_request(uri, method)
+}
+
+' Tool Handlers
+class KubernetesOperations {
+  - server : Server
+  - api_client : KubernetesApiClient
+  - kubectl_wrapper : KubectlWrapper
+  + __init__(server, api_client, kubectl_wrapper)
+  + register_tools()
+  - _register_scale_deployment_tool()
+  - _handle_scale_deployment(arguments)
+  - _register_restart_deployment_tool()
+  - _handle_restart_deployment(arguments)
+  - _register_create_namespace_tool()
+  - _handle_create_namespace(arguments)
+  - _register_delete_resource_tool()
+  - _handle_delete_resource(arguments)
+  - _register_get_logs_tool()
+  - _handle_get_logs(arguments)
+  - _register_exec_command_tool()
+  - _handle_exec_command(arguments)
+}
+
+class KubernetesMonitoring {
+  - server : Server
+  - api_client : KubernetesApiClient
+  - kubectl_wrapper : KubectlWrapper
+  + __init__(server, api_client, kubectl_wrapper)
+  + register_tools()
+  - _register_get_cluster_health_tool()
+  - _handle_get_cluster_health(arguments)
+  - _register_get_resource_usage_tool()
+  - _handle_get_resource_usage(arguments)
+  - _register_get_pod_resource_usage_tool()
+  - _handle_get_pod_resource_usage(arguments)
+  - _register_get_events_tool()
+  - _handle_get_events(arguments)
+  - _register_describe_resource_tool()
+  - _handle_describe_resource(arguments)
+}
+
+class KubernetesStatus {
+  - server : Server
+  - api_client : KubernetesApiClient
+  - kubectl_wrapper : KubectlWrapper
+  + __init__(server, api_client, kubectl_wrapper)
+  + register_tools()
+  - _register_check_component_status_tool()
+  - _handle_check_component_status(arguments)
+  - _register_check_node_health_tool()
+  - _handle_check_node_health(arguments)
+  - _register_check_deployment_health_tool()
+  - _handle_check_deployment_health(arguments)
+  - _register_check_api_server_health_tool()
+  - _handle_check_api_server_health(arguments)
+  - _register_check_resource_quotas_tool()
+  - _handle_check_resource_quotas(arguments)
+  - _register_run_cluster_diagnostics_tool()
+  - _handle_run_cluster_diagnostics(arguments)
+}
+
+' External Classes
+class "MCP Server" as MCPServer {
+  + Server(info, config)
+  + setRequestHandler(schema, handler)
+  + register_tool(name, handler)
+  + connect(transport)
+  + resources : List
+  + resource_templates : List
+  + tools : List
+}
+
+' Define relationships
+KubernetesMcpServer --> MCPServer : uses
+KubernetesMcpServer *--> KubernetesApiClient : contains
+KubernetesMcpServer *--> KubectlWrapper : contains
+KubernetesMcpServer *--> ResourceUriParser : contains
+KubernetesMcpServer *--> KubernetesOperations : contains
+KubernetesMcpServer *--> KubernetesMonitoring : contains
+KubernetesMcpServer *--> KubernetesStatus : contains
+KubernetesMcpServer o--> "*" BaseResourceHandler : contains
+
+BaseResourceHandler <|-- NodeResourceHandler : extends
+BaseResourceHandler <|-- DeploymentResourceHandler : extends
+BaseResourceHandler --> ResourceUriParser : uses
+BaseResourceHandler --> KubernetesApiClient : uses
+BaseResourceHandler --> KubectlWrapper : uses
+
+KubernetesOperations --> KubernetesApiClient : uses
+KubernetesOperations --> KubectlWrapper : uses
+KubernetesOperations --> MCPServer : registers tools
+
+KubernetesMonitoring --> KubernetesApiClient : uses
+KubernetesMonitoring --> KubectlWrapper : uses
+KubernetesMonitoring --> MCPServer : registers tools
+
+KubernetesStatus --> KubernetesApiClient : uses
+KubernetesStatus --> KubectlWrapper : uses
+KubernetesStatus --> MCPServer : registers tools
+
+@enduml

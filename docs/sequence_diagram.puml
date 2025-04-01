@@ -1,0 +1,138 @@
+@startuml MCP Kubernetes Server Sequence Diagram
+
+!theme minty
+
+actor "LLM Client" as Client
+participant "MCP Server\n(KubernetesMcpServer)" as Server
+participant "Resource Handler" as ResourceHandler
+participant "Tool Handler" as ToolHandler
+participant "K8s API Client" as ApiClient
+participant "Kubectl Wrapper" as Kubectl
+participant "Kubernetes API Server" as K8sApiServer
+
+' Resource Request Flow
+group Resource Request Flow
+    Client -> Server: Request Resource\n(kubernetes://nodes)
+    activate Server
+    
+    Server -> ResourceHandler: Delegate Resource Request
+    activate ResourceHandler
+    
+    ResourceHandler -> ApiClient: Get Nodes
+    activate ApiClient
+    
+    ApiClient -> K8sApiServer: API Request
+    activate K8sApiServer
+    K8sApiServer --> ApiClient: Response
+    deactivate K8sApiServer
+    
+    ApiClient --> ResourceHandler: Node Data
+    deactivate ApiClient
+    
+    ResourceHandler -> ResourceHandler: Format Response
+    ResourceHandler --> Server: Resource Content
+    deactivate ResourceHandler
+    
+    Server --> Client: Resource Response
+    deactivate Server
+end
+
+' Tool Request Flow
+group Tool Request Flow
+    Client -> Server: Tool Request\n(scale_deployment)
+    activate Server
+    
+    Server -> ToolHandler: Delegate Tool Request
+    activate ToolHandler
+    
+    ToolHandler -> ApiClient: Get Current Deployment
+    activate ApiClient
+    
+    ApiClient -> K8sApiServer: API Request
+    activate K8sApiServer
+    K8sApiServer --> ApiClient: Response
+    deactivate K8sApiServer
+    
+    ApiClient --> ToolHandler: Deployment Data
+    deactivate ApiClient
+    
+    ToolHandler -> Kubectl: Scale Command
+    activate Kubectl
+    
+    Kubectl -> K8sApiServer: kubectl scale deployment
+    activate K8sApiServer
+    K8sApiServer --> Kubectl: Command Result
+    deactivate K8sApiServer
+    
+    Kubectl --> ToolHandler: Command Output
+    deactivate Kubectl
+    
+    ToolHandler -> ApiClient: Get Updated Deployment
+    activate ApiClient
+    
+    ApiClient -> K8sApiServer: API Request
+    activate K8sApiServer
+    K8sApiServer --> ApiClient: Response
+    deactivate K8sApiServer
+    
+    ApiClient --> ToolHandler: Updated Deployment Data
+    deactivate ApiClient
+    
+    ToolHandler -> ToolHandler: Format Response
+    ToolHandler --> Server: Tool Result
+    deactivate ToolHandler
+    
+    Server --> Client: Tool Response
+    deactivate Server
+end
+
+' Monitoring Flow
+group Status/Monitoring Flow
+    Client -> Server: Tool Request\n(get_cluster_health)
+    activate Server
+    
+    Server -> ToolHandler: Delegate Tool Request
+    activate ToolHandler
+    
+    ToolHandler -> ApiClient: Get Node Status
+    activate ApiClient
+    
+    ApiClient -> K8sApiServer: API Request (Nodes)
+    activate K8sApiServer
+    K8sApiServer --> ApiClient: Response
+    deactivate K8sApiServer
+    
+    ApiClient --> ToolHandler: Node Status Data
+    deactivate ApiClient
+    
+    ToolHandler -> ApiClient: Get Pod Status
+    activate ApiClient
+    
+    ApiClient -> K8sApiServer: API Request (Pods)
+    activate K8sApiServer
+    K8sApiServer --> ApiClient: Response
+    deactivate K8sApiServer
+    
+    ApiClient --> ToolHandler: Pod Status Data
+    deactivate ApiClient
+    
+    ToolHandler -> ApiClient: Check API Server Health
+    activate ApiClient
+    
+    ApiClient -> K8sApiServer: Health Check
+    activate K8sApiServer
+    K8sApiServer --> ApiClient: Response
+    deactivate K8sApiServer
+    
+    ApiClient --> ToolHandler: API Server Health Data
+    deactivate ApiClient
+    
+    ToolHandler -> ToolHandler: Aggregate Health Status
+    ToolHandler --> Server: Health Status Result
+    deactivate ToolHandler
+    
+    Server --> Client: Health Status Response
+    deactivate Server
+end
+
+@enduml

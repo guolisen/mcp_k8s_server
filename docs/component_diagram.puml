@@ -1,0 +1,108 @@
+@startuml MCP Kubernetes Server Component Diagram
+
+!theme minty
+
+' Define components
+component "MCP Kubernetes Server" as MCPServer {
+  component "Resource Interface" as ResourceInterface {
+    component "Resource URI Parser" as UriParser
+    component "Base Resource Handler" as BaseHandler
+    component "Node Handler" as NodeHandler
+    component "Deployment Handler" as DeploymentHandler
+    component "Other Resource Handlers" as OtherHandlers #lightgray
+  }
+  
+  component "Tool Interface" as ToolInterface {
+    component "Operations Module" as Operations {
+      component "Scale Deployment" as Scale
+      component "Restart Deployment" as Restart
+      component "Create Namespace" as CreateNS
+      component "Delete Resource" as Delete
+      component "Get Logs" as Logs
+      component "Exec Command" as Exec
+    }
+    
+    component "Monitoring Module" as Monitoring {
+      component "Get Cluster Health" as ClusterHealth
+      component "Get Resource Usage" as ResourceUsage
+      component "Get Pod Resource Usage" as PodUsage
+      component "Get Events" as Events
+      component "Describe Resource" as Describe
+    }
+    
+    component "Status Module" as Status {
+      component "Check Component Status" as CompStatus
+      component "Check Node Health" as NodeHealth
+      component "Check Deployment Health" as DepHealth
+      component "Check API Server Health" as APIHealth
+      component "Check Resource Quotas" as Quotas
+      component "Run Cluster Diagnostics" as Diagnostics
+    }
+  }
+  
+  component "Kubernetes Interface" as KubernetesInterface {
+    component "Kubernetes API Client" as ApiClient
+    component "Kubectl Wrapper" as Kubectl
+  }
+  
+  component "MCP Protocol Handler" as ProtocolHandler {
+    component "Request Handlers" as ReqHandlers
+    component "Error Handlers" as ErrHandlers
+    component "Transport Layer" as Transport
+  }
+}
+
+' External systems
+component "Kubernetes Cluster" as K8sCluster {
+  component "API Server" as ApiServer
+  component "Resources" as Resources
+  component "Controllers" as Controllers
+}
+
+component "LLM Client" as Client
+
+' Interfaces
+interface "MCP Protocol" as MCPProtocol
+interface "Kubernetes API" as K8sAPI
+interface "kubectl CLI" as KubectlCLI
+
+' Define relationships
+Client -- MCPProtocol
+MCPProtocol -- ProtocolHandler
+
+ProtocolHandler ..> ResourceInterface : delegates resource\nrequests
+ProtocolHandler ..> ToolInterface : delegates tool\nrequests
+
+ResourceInterface ..> KubernetesInterface : uses
+ToolInterface ..> KubernetesInterface : uses
+
+UriParser <-- BaseHandler : uses
+BaseHandler <|-- NodeHandler
+BaseHandler <|-- DeploymentHandler
+BaseHandler <|-- OtherHandlers
+
+KubernetesInterface -- K8sAPI
+K8sAPI -- ApiServer
+KubernetesInterface -- KubectlCLI
+KubectlCLI -- ApiServer
+
+ApiServer -- Resources : manages
+ApiServer -- Controllers : controls
+
+' Additional notes
+note right of ResourceInterface
+  Provides read-only access to
+  Kubernetes resources via URIs
+end note
+
+note right of ToolInterface
+  Provides operational tools for
+  managing and monitoring clusters
+end note
+
+note right of KubernetesInterface
+  Abstracts access to Kubernetes
+  through direct API and kubectl
+end note
+
+@enduml
