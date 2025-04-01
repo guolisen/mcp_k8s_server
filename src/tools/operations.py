@@ -7,12 +7,12 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from modelcontextprotocol.sdk.server import Server
-from modelcontextprotocol.sdk.types import (
+from mcp.server.lowlevel import Server
+from mcp.types import (
     CallToolResult,
-    ToolContent,
-    ToolDefinition,
-    ToolParameterDefinition,
+    CallToolRequest,
+    TextContent,
+    Tool,
 )
 
 from ..k8s.api_client import KubernetesApiClient
@@ -48,33 +48,8 @@ class KubernetesOperations:
     
     def _register_scale_deployment_tool(self) -> None:
         """Register the scale_deployment tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="scale_deployment",
-                description="Scale a Kubernetes deployment to a specified number of replicas",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "namespace": {
-                            "type": "string",
-                            "description": "Namespace of the deployment"
-                        },
-                        "name": {
-                            "type": "string",
-                            "description": "Name of the deployment"
-                        },
-                        "replicas": {
-                            "type": "integer",
-                            "description": "Number of replicas to scale to",
-                            "minimum": 0
-                        }
-                    },
-                    "required": ["namespace", "name", "replicas"]
-                }
-            )
-        )
-        
-        self.server.register_tool("scale_deployment", self._handle_scale_deployment)
+        # Register the handler for the CallToolRequest with the tool name "scale_deployment"
+        self.server.request_handlers[CallToolRequest] = self._handle_tool_request
     
     def _handle_scale_deployment(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -94,7 +69,7 @@ class KubernetesOperations:
             if not all([namespace, name, isinstance(replicas, int)]):
                 return CallToolResult(
                     content=[
-                        ToolContent(
+                        TextContent(
                             type="text",
                             text="Missing or invalid arguments. Required: namespace (string), name (string), replicas (integer)"
                         )
@@ -112,7 +87,7 @@ class KubernetesOperations:
             if not deployment:
                 return CallToolResult(
                     content=[
-                        ToolContent(
+                        TextContent(
                             type="text",
                             text=f"Deployment scaled, but could not verify the current state. Original result: {result}"
                         )
@@ -121,7 +96,7 @@ class KubernetesOperations:
             
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Successfully scaled deployment {namespace}/{name} to {replicas} replicas.\n\n"
                              f"Current status:\n"
@@ -137,7 +112,7 @@ class KubernetesOperations:
             logger.error(f"Error scaling deployment: {e}")
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Error scaling deployment: {str(e)}"
                     )
@@ -147,28 +122,8 @@ class KubernetesOperations:
     
     def _register_restart_deployment_tool(self) -> None:
         """Register the restart_deployment tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="restart_deployment",
-                description="Restart a Kubernetes deployment",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "namespace": {
-                            "type": "string",
-                            "description": "Namespace of the deployment"
-                        },
-                        "name": {
-                            "type": "string",
-                            "description": "Name of the deployment"
-                        }
-                    },
-                    "required": ["namespace", "name"]
-                }
-            )
-        )
-        
-        self.server.register_tool("restart_deployment", self._handle_restart_deployment)
+        # No need to register separately, all tool calls are handled by _handle_tool_request
+        pass
     
     def _handle_restart_deployment(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -187,7 +142,7 @@ class KubernetesOperations:
             if not all([namespace, name]):
                 return CallToolResult(
                     content=[
-                        ToolContent(
+                        TextContent(
                             type="text",
                             text="Missing or invalid arguments. Required: namespace (string), name (string)"
                         )
@@ -203,7 +158,7 @@ class KubernetesOperations:
             
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Successfully restarted deployment {namespace}/{name}.\n\n"
                              f"Rollout status:\n{status}"
@@ -215,34 +170,18 @@ class KubernetesOperations:
             logger.error(f"Error restarting deployment: {e}")
             return CallToolResult(
                 content=[
-                    ToolContent(
-                        type="text",
-                        text=f"Error restarting deployment: {str(e)}"
-                    )
+                        TextContent(
+                            type="text",
+                            text=f"Error restarting deployment: {str(e)}"
+                        )
                 ],
                 is_error=True
             )
     
     def _register_create_namespace_tool(self) -> None:
         """Register the create_namespace tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="create_namespace",
-                description="Create a new Kubernetes namespace",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "name": {
-                            "type": "string",
-                            "description": "Name of the namespace to create"
-                        }
-                    },
-                    "required": ["name"]
-                }
-            )
-        )
-        
-        self.server.register_tool("create_namespace", self._handle_create_namespace)
+        # No need to register separately, all tool calls are handled by _handle_tool_request
+        pass
     
     def _handle_create_namespace(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -260,7 +199,7 @@ class KubernetesOperations:
             if not name:
                 return CallToolResult(
                     content=[
-                        ToolContent(
+                        TextContent(
                             type="text",
                             text="Missing or invalid arguments. Required: name (string)"
                         )
@@ -273,7 +212,7 @@ class KubernetesOperations:
             
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Successfully created namespace {name}."
                     )
@@ -284,42 +223,18 @@ class KubernetesOperations:
             logger.error(f"Error creating namespace: {e}")
             return CallToolResult(
                 content=[
-                    ToolContent(
-                        type="text",
-                        text=f"Error creating namespace: {str(e)}"
-                    )
+                        TextContent(
+                            type="text",
+                            text=f"Error creating namespace: {str(e)}"
+                        )
                 ],
                 is_error=True
             )
     
     def _register_delete_resource_tool(self) -> None:
         """Register the delete_resource tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="delete_resource",
-                description="Delete a Kubernetes resource",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "resource_type": {
-                            "type": "string",
-                            "description": "Type of resource to delete (e.g., pod, deployment, service)"
-                        },
-                        "name": {
-                            "type": "string",
-                            "description": "Name of the resource to delete"
-                        },
-                        "namespace": {
-                            "type": "string",
-                            "description": "Namespace of the resource (not required for cluster-scoped resources)"
-                        }
-                    },
-                    "required": ["resource_type", "name"]
-                }
-            )
-        )
-        
-        self.server.register_tool("delete_resource", self._handle_delete_resource)
+        # No need to register separately, all tool calls are handled by _handle_tool_request
+        pass
     
     def _handle_delete_resource(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -339,7 +254,7 @@ class KubernetesOperations:
             if not all([resource_type, name]):
                 return CallToolResult(
                     content=[
-                        ToolContent(
+                        TextContent(
                             type="text",
                             text="Missing or invalid arguments. Required: resource_type (string), name (string)"
                         )
@@ -353,7 +268,7 @@ class KubernetesOperations:
             namespace_str = f"in namespace {namespace}" if namespace else ""
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Successfully deleted {resource_type} {name} {namespace_str}."
                     )
@@ -364,47 +279,18 @@ class KubernetesOperations:
             logger.error(f"Error deleting resource: {e}")
             return CallToolResult(
                 content=[
-                    ToolContent(
-                        type="text",
-                        text=f"Error deleting resource: {str(e)}"
-                    )
+                        TextContent(
+                            type="text",
+                            text=f"Error deleting resource: {str(e)}"
+                        )
                 ],
                 is_error=True
             )
     
     def _register_get_logs_tool(self) -> None:
         """Register the get_logs tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="get_logs",
-                description="Get logs from a Kubernetes pod",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "namespace": {
-                            "type": "string",
-                            "description": "Namespace of the pod"
-                        },
-                        "pod_name": {
-                            "type": "string",
-                            "description": "Name of the pod"
-                        },
-                        "container_name": {
-                            "type": "string",
-                            "description": "Name of the container (optional, only needed for multi-container pods)"
-                        },
-                        "tail": {
-                            "type": "integer",
-                            "description": "Number of lines to show from the end of the logs (optional)",
-                            "minimum": 1
-                        }
-                    },
-                    "required": ["namespace", "pod_name"]
-                }
-            )
-        )
-        
-        self.server.register_tool("get_logs", self._handle_get_logs)
+        # No need to register separately, all tool calls are handled by _handle_tool_request
+        pass
     
     def _handle_get_logs(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -425,7 +311,7 @@ class KubernetesOperations:
             if not all([namespace, pod_name]):
                 return CallToolResult(
                     content=[
-                        ToolContent(
+                        TextContent(
                             type="text",
                             text="Missing or invalid arguments. Required: namespace (string), pod_name (string)"
                         )
@@ -441,7 +327,7 @@ class KubernetesOperations:
             
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Logs for pod {namespace}/{pod_name}{container_str}{tail_str}:\n\n{logs}"
                     )
@@ -452,7 +338,7 @@ class KubernetesOperations:
             logger.error(f"Error getting logs: {e}")
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Error getting logs: {str(e)}"
                     )
@@ -462,39 +348,46 @@ class KubernetesOperations:
     
     def _register_exec_command_tool(self) -> None:
         """Register the exec_command tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="exec_command",
-                description="Execute a command in a Kubernetes pod",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "namespace": {
-                            "type": "string",
-                            "description": "Namespace of the pod"
-                        },
-                        "pod_name": {
-                            "type": "string",
-                            "description": "Name of the pod"
-                        },
-                        "container_name": {
-                            "type": "string",
-                            "description": "Name of the container (optional, only needed for multi-container pods)"
-                        },
-                        "command": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            },
-                            "description": "Command to execute and its arguments"
-                        }
-                    },
-                    "required": ["namespace", "pod_name", "command"]
-                }
-            )
-        )
+        # No need to register separately, all tool calls are handled by _handle_tool_request
+        pass
         
-        self.server.register_tool("exec_command", self._handle_exec_command)
+    def _handle_tool_request(self, request):
+        """
+        Handle a tool request.
+        
+        Args:
+            request: The tool request.
+            
+        Returns:
+            The result of the tool call.
+        """
+        tool_name = request["params"]["name"]
+        arguments = request["params"]["arguments"]
+        
+        # Route to the appropriate handler based on the tool name
+        if tool_name == "scale_deployment":
+            return self._handle_scale_deployment(arguments)
+        elif tool_name == "restart_deployment":
+            return self._handle_restart_deployment(arguments)
+        elif tool_name == "create_namespace":
+            return self._handle_create_namespace(arguments)
+        elif tool_name == "delete_resource":
+            return self._handle_delete_resource(arguments)
+        elif tool_name == "get_logs":
+            return self._handle_get_logs(arguments)
+        elif tool_name == "exec_command":
+            return self._handle_exec_command(arguments)
+        else:
+            logger.error(f"Unknown tool: {tool_name}")
+            return CallToolResult(
+                content=[
+                    TextContent(
+                        type="text",
+                        text=f"Unknown tool: {tool_name}"
+                    )
+                ],
+                is_error=True
+            )
     
     def _handle_exec_command(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -515,7 +408,7 @@ class KubernetesOperations:
             if not all([namespace, pod_name, command]) or not isinstance(command, list):
                 return CallToolResult(
                     content=[
-                        ToolContent(
+                        TextContent(
                             type="text",
                             text="Missing or invalid arguments. Required: namespace (string), pod_name (string), command (array of strings)"
                         )
@@ -531,7 +424,7 @@ class KubernetesOperations:
             
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Command executed in pod {namespace}/{pod_name}{container_str}: {command_str}\n\n"
                              f"Result:\n{result}"
@@ -543,7 +436,7 @@ class KubernetesOperations:
             logger.error(f"Error executing command: {e}")
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Error executing command: {str(e)}"
                     )

@@ -7,8 +7,8 @@ import json
 import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from modelcontextprotocol.sdk.server import Server
-from modelcontextprotocol.sdk.types import ReadResourceResult, ResourceInfo, ResourceTemplate
+from mcp.server.lowlevel import Server
+from mcp.types import ReadResourceResult, Resource, ResourceTemplate, ListResourcesRequest, ListResourceTemplatesRequest
 
 logger = logging.getLogger(__name__)
 
@@ -109,10 +109,41 @@ class BaseResourceHandler:
         """
         Register resources and resource templates.
         To be implemented by subclasses.
+        
+        Note: This method should set up request handlers for ListResourcesRequest and
+        ListResourceTemplatesRequest to return the appropriate resources and templates.
         """
-        raise NotImplementedError("Subclasses must implement register_resources()")
+        # Set up request handlers for resources and resource templates
+        self.server.request_handlers[ListResourcesRequest] = self._handle_list_resources
+        self.server.request_handlers[ListResourceTemplatesRequest] = self._handle_list_resource_templates
+        
+    def _handle_list_resources(self, request):
+        """
+        Handle a list_resources request.
+        
+        Args:
+            request: The list_resources request.
+            
+        Returns:
+            The list of resources.
+        """
+        # To be implemented by subclasses
+        return {"resources": []}
+        
+    def _handle_list_resource_templates(self, request):
+        """
+        Handle a list_resource_templates request.
+        
+        Args:
+            request: The list_resource_templates request.
+            
+        Returns:
+            The list of resource templates.
+        """
+        # To be implemented by subclasses
+        return {"resourceTemplates": []}
     
-    def get_resource_info(self, resource_type: str, description: str) -> List[ResourceInfo]:
+    def get_resource_info(self, resource_type: str, description: str) -> List[Resource]:
         """
         Get resource info for a specific resource type.
         
@@ -121,14 +152,14 @@ class BaseResourceHandler:
             description: Description of the resource.
         
         Returns:
-            List of ResourceInfo objects.
+            List of Resource objects.
         """
         return [
-            ResourceInfo(
+            Resource(
                 uri=self.uri_parser.build_resource_uri(resource_type),
                 name=f"All {resource_type} in all namespaces",
                 description=f"List of all {description} across all namespaces",
-                mime_type="application/json"
+                mimeType="application/json"
             )
         ]
     
@@ -146,17 +177,17 @@ class BaseResourceHandler:
         return [
             # Template for all resources of type in a namespace
             ResourceTemplate(
-                uri_template=f"kubernetes://{resource_type}/{{namespace}}",
+                uriTemplate=f"kubernetes://{resource_type}/{{namespace}}",
                 name=f"All {resource_type} in a namespace",
                 description=f"List of all {description} in the specified namespace",
-                mime_type="application/json"
+                mimeType="application/json"
             ),
             # Template for a specific resource
             ResourceTemplate(
-                uri_template=f"kubernetes://{resource_type}/{{namespace}}/{{name}}",
+                uriTemplate=f"kubernetes://{resource_type}/{{namespace}}/{{name}}",
                 name=f"Specific {resource_type}",
                 description=f"Details of a specific {description} in the specified namespace",
-                mime_type="application/json"
+                mimeType="application/json"
             )
         ]
     

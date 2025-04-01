@@ -5,8 +5,8 @@ Node resource handler for Kubernetes nodes.
 import logging
 from typing import Any, Dict, List, Optional
 
-from modelcontextprotocol.sdk.server import Server
-from modelcontextprotocol.sdk.types import ReadResourceResult, ResourceContent, ResourceInfo, ResourceTemplate
+from mcp.server.lowlevel import Server
+from mcp.types import ReadResourceResult, TextResourceContents, Resource, ResourceTemplate
 
 from ..k8s.api_client import KubernetesApiClient
 from ..k8s.kubectl import KubectlWrapper
@@ -30,18 +30,41 @@ class NodeResourceHandler(BaseResourceHandler):
     
     def register_resources(self) -> None:
         """Register node resources and resource templates."""
-        # Register static resources
-        self.server.resources.extend(self.get_resource_info("nodes", "Kubernetes nodes"))
+        # Call the parent class method to set up the request handlers
+        super().register_resources()
         
-        # Register resource template for specific node
-        self.server.resource_templates.extend([
+    def _handle_list_resources(self, request):
+        """
+        Handle a list_resources request.
+        
+        Args:
+            request: The list_resources request.
+            
+        Returns:
+            The list of resources.
+        """
+        resources = self.get_resource_info("nodes", "Kubernetes nodes")
+        return {"resources": resources}
+    
+    def _handle_list_resource_templates(self, request):
+        """
+        Handle a list_resource_templates request.
+        
+        Args:
+            request: The list_resource_templates request.
+            
+        Returns:
+            The list of resource templates.
+        """
+        templates = [
             ResourceTemplate(
-                uri_template="kubernetes://nodes/{name}",
+                uriTemplate="kubernetes://nodes/{name}",
                 name="Specific node",
                 description="Details of a specific Kubernetes node",
-                mime_type="application/json"
+                mimeType="application/json"
             )
-        ])
+        ]
+        return {"resourceTemplates": templates}
     
     def handle_resource_request(self, uri: str, method: str = "get") -> ReadResourceResult:
         """
@@ -126,9 +149,9 @@ class NodeResourceHandler(BaseResourceHandler):
             
             return ReadResourceResult(
                 contents=[
-                    ResourceContent(
+                    TextResourceContents(
                         uri=uri,
-                        mime_type="application/json",
+                        mimeType="application/json",
                         text=self.format_json_response(response_data)
                     )
                 ]

@@ -7,12 +7,12 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from modelcontextprotocol.sdk.server import Server
-from modelcontextprotocol.sdk.types import (
+from mcp.server.lowlevel import Server
+from mcp.types import (
     CallToolResult,
-    ToolContent,
-    ToolDefinition,
-    ToolParameterDefinition,
+    CallToolRequest,
+    TextContent,
+    Tool,
 )
 
 from ..k8s.api_client import KubernetesApiClient
@@ -47,19 +47,8 @@ class KubernetesMonitoring:
     
     def _register_get_cluster_health_tool(self) -> None:
         """Register the get_cluster_health tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="get_cluster_health",
-                description="Get the overall health status of the Kubernetes cluster",
-                input_schema={
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }
-            )
-        )
-        
-        self.server.register_tool("get_cluster_health", self._handle_get_cluster_health)
+        # Register the handler for the CallToolRequest
+        self.server.request_handlers[CallToolRequest] = self._handle_tool_request
     
     def _handle_get_cluster_health(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -105,7 +94,7 @@ class KubernetesMonitoring:
             
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=output
                     )
@@ -116,7 +105,7 @@ class KubernetesMonitoring:
             logger.error(f"Error getting cluster health: {e}")
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Error getting cluster health: {str(e)}"
                     )
@@ -126,19 +115,8 @@ class KubernetesMonitoring:
     
     def _register_get_resource_usage_tool(self) -> None:
         """Register the get_resource_usage tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="get_resource_usage",
-                description="Get resource usage (CPU, memory) across all nodes in the cluster",
-                input_schema={
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }
-            )
-        )
-        
-        self.server.register_tool("get_resource_usage", self._handle_get_resource_usage)
+        # No need to register separately, all tool calls are handled by _handle_tool_request
+        pass
     
     def _handle_get_resource_usage(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -156,7 +134,7 @@ class KubernetesMonitoring:
             
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Cluster Node Resource Usage:\n\n{usage}"
                     )
@@ -167,7 +145,7 @@ class KubernetesMonitoring:
             logger.error(f"Error getting resource usage: {e}")
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Error getting resource usage: {str(e)}"
                     )
@@ -177,24 +155,8 @@ class KubernetesMonitoring:
     
     def _register_get_pod_resource_usage_tool(self) -> None:
         """Register the get_pod_resource_usage tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="get_pod_resource_usage",
-                description="Get resource usage (CPU, memory) for pods",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "namespace": {
-                            "type": "string",
-                            "description": "Namespace to filter pods (optional)"
-                        }
-                    },
-                    "required": []
-                }
-            )
-        )
-        
-        self.server.register_tool("get_pod_resource_usage", self._handle_get_pod_resource_usage)
+        # No need to register separately, all tool calls are handled by _handle_tool_request
+        pass
     
     def _handle_get_pod_resource_usage(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -216,7 +178,7 @@ class KubernetesMonitoring:
             
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Pod Resource Usage {namespace_str}:\n\n{usage}"
                     )
@@ -227,7 +189,7 @@ class KubernetesMonitoring:
             logger.error(f"Error getting pod resource usage: {e}")
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Error getting pod resource usage: {str(e)}"
                     )
@@ -237,24 +199,8 @@ class KubernetesMonitoring:
     
     def _register_get_events_tool(self) -> None:
         """Register the get_events tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="get_events",
-                description="Get Kubernetes events",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "namespace": {
-                            "type": "string",
-                            "description": "Namespace to filter events (optional)"
-                        }
-                    },
-                    "required": []
-                }
-            )
-        )
-        
-        self.server.register_tool("get_events", self._handle_get_events)
+        # No need to register separately, all tool calls are handled by _handle_tool_request
+        pass
     
     def _handle_get_events(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -281,7 +227,7 @@ class KubernetesMonitoring:
             if not events:
                 return CallToolResult(
                     content=[
-                        ToolContent(
+                        TextContent(
                             type="text",
                             text=f"No events found {namespace_str}."
                         )
@@ -307,7 +253,7 @@ class KubernetesMonitoring:
             
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=output
                     )
@@ -318,7 +264,7 @@ class KubernetesMonitoring:
             logger.error(f"Error getting events: {e}")
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Error getting events: {str(e)}"
                     )
@@ -328,32 +274,44 @@ class KubernetesMonitoring:
     
     def _register_describe_resource_tool(self) -> None:
         """Register the describe_resource tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="describe_resource",
-                description="Get detailed description of a Kubernetes resource",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "resource_type": {
-                            "type": "string",
-                            "description": "Type of resource to describe (e.g., pod, deployment, service)"
-                        },
-                        "name": {
-                            "type": "string",
-                            "description": "Name of the resource"
-                        },
-                        "namespace": {
-                            "type": "string",
-                            "description": "Namespace of the resource (not required for cluster-scoped resources)"
-                        }
-                    },
-                    "required": ["resource_type", "name"]
-                }
-            )
-        )
+        # No need to register separately, all tool calls are handled by _handle_tool_request
+        pass
         
-        self.server.register_tool("describe_resource", self._handle_describe_resource)
+    def _handle_tool_request(self, request):
+        """
+        Handle a tool request.
+        
+        Args:
+            request: The tool request.
+            
+        Returns:
+            The result of the tool call.
+        """
+        tool_name = request["params"]["name"]
+        arguments = request["params"]["arguments"]
+        
+        # Route to the appropriate handler based on the tool name
+        if tool_name == "get_cluster_health":
+            return self._handle_get_cluster_health(arguments)
+        elif tool_name == "get_resource_usage":
+            return self._handle_get_resource_usage(arguments)
+        elif tool_name == "get_pod_resource_usage":
+            return self._handle_get_pod_resource_usage(arguments)
+        elif tool_name == "get_events":
+            return self._handle_get_events(arguments)
+        elif tool_name == "describe_resource":
+            return self._handle_describe_resource(arguments)
+        else:
+            logger.error(f"Unknown tool: {tool_name}")
+            return CallToolResult(
+                content=[
+                    TextContent(
+                        type="text",
+                        text=f"Unknown tool: {tool_name}"
+                    )
+                ],
+                is_error=True
+            )
     
     def _handle_describe_resource(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -373,7 +331,7 @@ class KubernetesMonitoring:
             if not all([resource_type, name]):
                 return CallToolResult(
                     content=[
-                        ToolContent(
+                        TextContent(
                             type="text",
                             text="Missing or invalid arguments. Required: resource_type (string), name (string)"
                         )
@@ -388,7 +346,7 @@ class KubernetesMonitoring:
             
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Description of {resource_type} {name} {namespace_str}:\n\n{description}"
                     )
@@ -399,7 +357,7 @@ class KubernetesMonitoring:
             logger.error(f"Error describing resource: {e}")
             return CallToolResult(
                 content=[
-                    ToolContent(
+                    TextContent(
                         type="text",
                         text=f"Error describing resource: {str(e)}"
                     )

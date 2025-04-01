@@ -9,25 +9,48 @@ import os
 import sys
 from typing import Any, Dict, List, Optional
 
-from modelcontextprotocol.sdk.server import Server
-from modelcontextprotocol.sdk.server.stdio import StdioServerTransport
-from modelcontextprotocol.sdk.types import (
-    ErrorCode,
-    ListResourcesRequestSchema,
-    ListResourceTemplatesRequestSchema,
-    ListToolsRequestSchema,
-    McpError,
-    ReadResourceRequestSchema,
-)
+# Add the parent directory to the Python path to make relative imports work
+sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
-from .k8s.api_client import KubernetesApiClient
-from .k8s.kubectl import KubectlWrapper
-from .resources.base import ResourceUriParser
-from .resources.nodes import NodeResourceHandler
-from .resources.deployments import DeploymentResourceHandler
-from .tools.operations import KubernetesOperations
-from .tools.monitoring import KubernetesMonitoring
-from .tools.status import KubernetesStatus
+from mcp.server.lowlevel import Server
+from mcp.server.stdio import stdio_server
+from mcp.types import (
+    INTERNAL_ERROR,
+    INVALID_PARAMS,
+    INVALID_REQUEST,
+    METHOD_NOT_FOUND,
+    ListResourcesRequest,
+    ListResourceTemplatesRequest,
+    ListToolsRequest,
+    ErrorData,
+    ReadResourceRequest,
+)
+from mcp.shared.exceptions import McpError
+
+import kubernetes.client
+from kubernetes import client, config
+from kubernetes.client.rest import ApiException
+
+try:
+    # When imported as part of the package
+    from mcp_k8s_server.k8s.api_client import KubernetesApiClient
+    from mcp_k8s_server.k8s.kubectl import KubectlWrapper
+    from mcp_k8s_server.resources.base import ResourceUriParser
+    from mcp_k8s_server.resources.nodes import NodeResourceHandler
+    from mcp_k8s_server.resources.deployments import DeploymentResourceHandler
+    from mcp_k8s_server.tools.operations import KubernetesOperations
+    from mcp_k8s_server.tools.monitoring import KubernetesMonitoring
+    from mcp_k8s_server.tools.status import KubernetesStatus
+except ImportError:
+    # When run directly
+    from src.k8s.api_client import KubernetesApiClient
+    from src.k8s.kubectl import KubectlWrapper
+    from src.resources.base import ResourceUriParser
+    from src.resources.nodes import NodeResourceHandler
+    from src.resources.deployments import DeploymentResourceHandler
+    from src.tools.operations import KubernetesOperations
+    from src.tools.monitoring import KubernetesMonitoring
+    from src.tools.status import KubernetesStatus
 
 # Set up logging
 logging.basicConfig(
@@ -53,18 +76,12 @@ class KubernetesMcpServer:
         Args:
             kubeconfig_path: Path to kubeconfig file. If None, uses the default.
         """
-        self.server = Server(
-            {
-                "name": "kubernetes-mcp-server",
-                "version": "0.1.0",
-            },
-            {
-                "capabilities": {
-                    "resources": True,
-                    "tools": True,
-                }
-            }
-        )
+        # Set server information
+        self.server_name = "kubernetes-mcp-server"
+        self.server_version = "0.1.0"
+        
+        # Initialize the server
+        self.server = Server(self.server_name)
         
         # Error handling
         self.server.onerror = self._handle_error
@@ -98,7 +115,7 @@ class KubernetesMcpServer:
             handler.register_resources()
         
         # Set request handlers
-        self.server.setRequestHandler(ReadResourceRequestSchema, self._handle_read_resource)
+        self.server.request_handlers[ReadResourceRequest] = self._handle_read_resource
     
     def _handle_error(self, error: Exception) -> None:
         """
@@ -131,28 +148,52 @@ class KubernetesMcpServer:
                 return self.resource_handlers[resource_type].handle_resource_request(uri)
             else:
                 raise McpError(
-                    ErrorCode.NotFound,
-                    f"Resource type not supported: {resource_type}"
+                    ErrorData(
+                        code=METHOD_NOT_FOUND,  # Using METHOD_NOT_FOUND as a substitute for NOT_FOUND
+                        message=f"Resource type not supported: {resource_type}"
+                    )
                 )
         
         except ValueError as e:
             raise McpError(
-                ErrorCode.InvalidRequest,
-                f"Invalid resource URI: {uri}. {str(e)}"
+                ErrorData(
+                    code=INVALID_REQUEST,
+                    message=f"Invalid resource URI: {uri}. {str(e)}"
+                )
             )
         
         except Exception as e:
             logger.error(f"Error handling resource request: {e}")
             raise McpError(
-                ErrorCode.InternalError,
-                f"Error handling resource request: {str(e)}"
+                ErrorData(
+                    code=INTERNAL_ERROR,
+                    message=f"Error handling resource request: {str(e)}"
+                )
             )
     
     async def run(self) -> None:
         """Run the MCP server."""
-        transport = StdioServerTransport()
-        await self.server.connect(transport)
-        logger.info("Kubernetes MCP server running")
+        # Create initialization options
+        init_options = {
+            "server_name": self.server_name,
+            "server_version": self.server_version,
+            "capabilities": {
+                "resources": True,
+                "tools": True
+            }
+        }
+        
+        # Use stdio_server as an async context manager
+        async with stdio_server() as (read_stream, write_stream):
+            logger.info("Kubernetes MCP server running")
+            await self.server.run(read_stream, write_stream, init_options)
+
+def prepareKubeConfig():
+    configuration = client.Configuration()
+    config.load_incluster_config(client_configuration=configuration)
+    configuration.verify_ssl = False
+    v1 = client.CoreV1Api(client.ApiClient(configuration))
+    return v1, configuration
 
 def main() -> None:
     """Main entry point for the server."""

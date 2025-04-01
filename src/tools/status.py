@@ -8,12 +8,12 @@ import logging
 import time
 from typing import Any, Dict, List, Optional
 
-from modelcontextprotocol.sdk.server import Server
-from modelcontextprotocol.sdk.types import (
+from mcp.server.lowlevel import Server
+from mcp.types import (
     CallToolResult,
-    ToolContent,
-    ToolDefinition,
-    ToolParameterDefinition,
+    CallToolRequest,
+    TextContent,
+    Tool,
 )
 
 from ..k8s.api_client import KubernetesApiClient
@@ -49,19 +49,8 @@ class KubernetesStatus:
     
     def _register_check_component_status_tool(self) -> None:
         """Register the check_component_status tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="check_component_status",
-                description="Check the status of Kubernetes cluster components",
-                input_schema={
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }
-            )
-        )
-        
-        self.server.register_tool("check_component_status", self._handle_check_component_status)
+        # Register the handler for the CallToolRequest
+        self.server.request_handlers[CallToolRequest] = self._handle_tool_request
     
     def _handle_check_component_status(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -140,24 +129,8 @@ class KubernetesStatus:
     
     def _register_check_node_health_tool(self) -> None:
         """Register the check_node_health tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="check_node_health",
-                description="Check the health of Kubernetes nodes",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "node_name": {
-                            "type": "string",
-                            "description": "Name of the node to check (optional, checks all nodes if not provided)"
-                        }
-                    },
-                    "required": []
-                }
-            )
-        )
-        
-        self.server.register_tool("check_node_health", self._handle_check_node_health)
+        # No need to register separately, all tool calls are handled by _handle_tool_request
+        pass
     
     def _handle_check_node_health(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -245,28 +218,8 @@ class KubernetesStatus:
     
     def _register_check_deployment_health_tool(self) -> None:
         """Register the check_deployment_health tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="check_deployment_health",
-                description="Check the health of Kubernetes deployments",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "namespace": {
-                            "type": "string",
-                            "description": "Namespace of the deployments (optional, checks all namespaces if not provided)"
-                        },
-                        "deployment_name": {
-                            "type": "string",
-                            "description": "Name of the deployment to check (optional, checks all deployments if not provided)"
-                        }
-                    },
-                    "required": []
-                }
-            )
-        )
-        
-        self.server.register_tool("check_deployment_health", self._handle_check_deployment_health)
+        # No need to register separately, all tool calls are handled by _handle_tool_request
+        pass
     
     def _handle_check_deployment_health(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -369,19 +322,8 @@ class KubernetesStatus:
     
     def _register_check_api_server_health_tool(self) -> None:
         """Register the check_api_server_health tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="check_api_server_health",
-                description="Check the health of the Kubernetes API server",
-                input_schema={
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }
-            )
-        )
-        
-        self.server.register_tool("check_api_server_health", self._handle_check_api_server_health)
+        # No need to register separately, all tool calls are handled by _handle_tool_request
+        pass
     
     def _handle_check_api_server_health(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -434,24 +376,8 @@ class KubernetesStatus:
     
     def _register_check_resource_quotas_tool(self) -> None:
         """Register the check_resource_quotas tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="check_resource_quotas",
-                description="Check resource quotas and their usage",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "namespace": {
-                            "type": "string",
-                            "description": "Namespace to check quotas for (optional, checks all namespaces if not provided)"
-                        }
-                    },
-                    "required": []
-                }
-            )
-        )
-        
-        self.server.register_tool("check_resource_quotas", self._handle_check_resource_quotas)
+        # No need to register separately, all tool calls are handled by _handle_tool_request
+        pass
     
     def _handle_check_resource_quotas(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
@@ -527,19 +453,46 @@ class KubernetesStatus:
     
     def _register_run_cluster_diagnostics_tool(self) -> None:
         """Register the run_cluster_diagnostics tool."""
-        self.server.tools.append(
-            ToolDefinition(
-                name="run_cluster_diagnostics",
-                description="Run comprehensive diagnostics on the Kubernetes cluster",
-                input_schema={
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }
-            )
-        )
+        # No need to register separately, all tool calls are handled by _handle_tool_request
+        pass
         
-        self.server.register_tool("run_cluster_diagnostics", self._handle_run_cluster_diagnostics)
+    def _handle_tool_request(self, request):
+        """
+        Handle a tool request.
+        
+        Args:
+            request: The tool request.
+            
+        Returns:
+            The result of the tool call.
+        """
+        tool_name = request["params"]["name"]
+        arguments = request["params"]["arguments"]
+        
+        # Route to the appropriate handler based on the tool name
+        if tool_name == "check_component_status":
+            return self._handle_check_component_status(arguments)
+        elif tool_name == "check_node_health":
+            return self._handle_check_node_health(arguments)
+        elif tool_name == "check_deployment_health":
+            return self._handle_check_deployment_health(arguments)
+        elif tool_name == "check_api_server_health":
+            return self._handle_check_api_server_health(arguments)
+        elif tool_name == "check_resource_quotas":
+            return self._handle_check_resource_quotas(arguments)
+        elif tool_name == "run_cluster_diagnostics":
+            return self._handle_run_cluster_diagnostics(arguments)
+        else:
+            logger.error(f"Unknown tool: {tool_name}")
+            return CallToolResult(
+                content=[
+                    TextContent(
+                        type="text",
+                        text=f"Unknown tool: {tool_name}"
+                    )
+                ],
+                is_error=True
+            )
     
     def _handle_run_cluster_diagnostics(self, arguments: Dict[str, Any]) -> CallToolResult:
         """
