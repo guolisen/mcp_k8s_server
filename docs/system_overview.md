@@ -16,6 +16,11 @@ The system follows a layered architecture that separates concerns and provides a
 ### MCP Server Core
 - **KubernetesMcpServer** - Central server component that initializes and coordinates all other components
 - **MCP Protocol Handler** - Manages MCP protocol communication, request parsing, and response formatting
+- **Configuration System** - Handles loading and parsing of configuration files for server settings
+
+### Server Modes
+- **stdio Mode** - Communicates through standard input/output streams (default)
+- **Network Mode** - Binds to an IP address and port for network communication
 
 ### Resource Interface
 - **BaseResourceHandler** - Abstract base class for all resource handlers
@@ -65,7 +70,20 @@ The server is implemented in Python, using:
 - MCP SDK for protocol handling
 - Official Kubernetes Python client for API access
 - Subprocess module for kubectl command execution
+- PyYAML for configuration file parsing
 - Standard Python libraries for utility functions
+
+## Configuration
+
+The server can be configured using:
+- YAML configuration files for persistent settings
+- Command-line arguments for overriding configuration
+- Environment variables for sensitive information
+
+Configuration options include:
+- Server binding settings (IP, port, mode)
+- Kubernetes connection settings
+- Logging configuration
 
 All diagrams in this directory provide detailed views of the system architecture from different perspectives:
 - `architecture.puml` - High-level system architecture

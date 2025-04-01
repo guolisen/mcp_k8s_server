@@ -87,8 +87,36 @@ python -m src.server
 ```
 
 Options:
-- `--kubeconfig PATH`: Path to kubeconfig file
+- `--config PATH`: Path to configuration file
+- `--kubeconfig PATH`: Path to kubeconfig file (overrides config file)
+- `--bind-ip IP`: IP address to bind to (overrides config file)
+- `--bind-port PORT`: Port to bind to (overrides config file)
+- `--mode {stdio,network}`: Server mode (overrides config file)
 - `--debug`: Enable debug logging
+
+### Configuration File
+
+The server can be configured using a YAML configuration file. Create a `config.yaml` file with the following structure:
+
+```yaml
+server:
+  bind_ip: "0.0.0.0"  # IP address to bind to
+  bind_port: 8080     # Port to bind to
+  mode: "network"     # "network" or "stdio"
+
+kubernetes:
+  kubeconfig_path: null  # Path to kubeconfig file, null for default
+
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file: null     # Path to log file, null for stderr only
+```
+
+To use the configuration file:
+
+```bash
+python -m src.server --config config.yaml
+```
 
 ### MCP Configuration
 
@@ -99,7 +127,25 @@ Add the server to your MCP configuration file:
   "mcpServers": {
     "kubernetes": {
       "command": "python",
-      "args": ["-m", "src.server"],
+      "args": ["-m", "src.server", "--config", "/path/to/config.yaml"],
+      "env": {
+        "KUBECONFIG": "/path/to/kubeconfig"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
+```
+
+For network mode, you can also specify:
+
+```json
+{
+  "mcpServers": {
+    "kubernetes": {
+      "command": "python",
+      "args": ["-m", "src.server", "--mode", "network", "--bind-ip", "127.0.0.1", "--bind-port", "8080"],
       "env": {
         "KUBECONFIG": "/path/to/kubeconfig"
       },
