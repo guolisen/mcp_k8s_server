@@ -1,6 +1,6 @@
 """MCP tools for Kubernetes monitoring."""
 
-import json
+import json, datetime
 import logging
 import time
 from typing import Any, Dict, List, Optional
@@ -12,7 +12,15 @@ from mcp_k8s_server.k8s.client import K8sClient
 
 logger = logging.getLogger(__name__)
 
-
+class DatetimeEncode(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        elif isinstance(obj, datetime.date):
+            return obj.strftime('%Y-%m-%d')
+        else:
+            return json.JSONEncoder.default(self, obj)
+        
 def register_monitoring_tools(mcp: FastMCP, k8s_monitoring: K8sMonitoring) -> None:
     """Register monitoring tools with the MCP server.
     
@@ -33,7 +41,7 @@ def register_monitoring_tools(mcp: FastMCP, k8s_monitoring: K8sMonitoring) -> No
         try:
             status = k8s_monitoring.get_cluster_status()
             
-            return json.dumps(status, indent=2)
+            return json.dumps(status, indent=2, cls=DatetimeEncode, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error getting cluster status: {e}")
             return json.dumps({"error": str(e)})
@@ -53,7 +61,7 @@ def register_monitoring_tools(mcp: FastMCP, k8s_monitoring: K8sMonitoring) -> No
         try:
             status = k8s_monitoring.get_node_status(name)
             
-            return json.dumps(status, indent=2)
+            return json.dumps(status, indent=2, cls=DatetimeEncode, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error getting node status: {e}")
             return json.dumps({"error": str(e)})
@@ -74,7 +82,7 @@ def register_monitoring_tools(mcp: FastMCP, k8s_monitoring: K8sMonitoring) -> No
         try:
             status = k8s_monitoring.get_pod_status(name, namespace)
             
-            return json.dumps(status, indent=2)
+            return json.dumps(status, indent=2, cls=DatetimeEncode, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error getting pod status: {e}")
             return json.dumps({"error": str(e)})
@@ -95,7 +103,7 @@ def register_monitoring_tools(mcp: FastMCP, k8s_monitoring: K8sMonitoring) -> No
         try:
             status = k8s_monitoring.get_deployment_status(name, namespace)
             
-            return json.dumps(status, indent=2)
+            return json.dumps(status, indent=2, cls=DatetimeEncode, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error getting deployment status: {e}")
             return json.dumps({"error": str(e)})
@@ -117,7 +125,7 @@ def register_monitoring_tools(mcp: FastMCP, k8s_monitoring: K8sMonitoring) -> No
         try:
             metrics = k8s_monitoring.get_resource_metrics(kind, name, namespace)
             
-            return json.dumps(metrics, indent=2)
+            return json.dumps(metrics, indent=2, cls=DatetimeEncode, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error getting metrics for {kind} {name}: {e}")
             return json.dumps({"error": str(e)})
@@ -263,7 +271,7 @@ def register_monitoring_tools(mcp: FastMCP, k8s_monitoring: K8sMonitoring) -> No
             else:
                 health_summary["assessment"] = "Unable to determine cluster health status."
             
-            return json.dumps(health_summary, indent=2)
+            return json.dumps(health_summary, indent=2, cls=DatetimeEncode, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error performing cluster health check: {e}")
             return json.dumps({

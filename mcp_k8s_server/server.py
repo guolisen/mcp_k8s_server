@@ -20,7 +20,7 @@ from mcp_k8s_server.resources.cluster_resources import register_cluster_resource
 logger = logging.getLogger(__name__)
 
 
-async def create_server(config: Optional[Config] = None) -> FastMCP:
+def create_server(config: Optional[Config] = None) -> FastMCP:
     """Create an MCP server for Kubernetes.
     
     Args:
@@ -54,8 +54,8 @@ async def create_server(config: Optional[Config] = None) -> FastMCP:
     
     # Register tools
     register_resource_tools(mcp, k8s_client)
-    register_operation_tools(mcp, k8s_operations)
-    register_monitoring_tools(mcp, k8s_monitoring)
+    #register_operation_tools(mcp, k8s_operations)
+    #register_monitoring_tools(mcp, k8s_monitoring)
     
     # Register prompts
     register_analysis_prompts(mcp)
@@ -64,8 +64,8 @@ async def create_server(config: Optional[Config] = None) -> FastMCP:
     #register_cluster_resources(mcp, k8s_client)
     
     # Start monitoring
-    if config.monitoring.enabled:
-        k8s_monitoring.start_monitoring()
+    #if config.monitoring.enabled:
+    #    k8s_monitoring.start_monitoring()
     
     return mcp
 
@@ -97,8 +97,7 @@ def run_server(config: Optional[Config] = None,
         config.server.host = host
     
     # Create the MCP server
-    loop = asyncio.get_event_loop()
-    mcp = loop.run_until_complete(create_server(config))
+    mcp = create_server(config)
     
     # Run the server
     try:        

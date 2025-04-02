@@ -1,6 +1,6 @@
 """MCP tools for Kubernetes operations."""
 
-import json
+import json, datetime
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -10,6 +10,14 @@ from mcp_k8s_server.k8s.operations import K8sOperations
 
 logger = logging.getLogger(__name__)
 
+class DatetimeEncode(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        elif isinstance(obj, datetime.date):
+            return obj.strftime('%Y-%m-%d')
+        else:
+            return json.JSONEncoder.default(self, obj)
 
 def register_operation_tools(mcp: FastMCP, k8s_operations: K8sOperations) -> None:
     """Register operation tools with the MCP server.
@@ -34,7 +42,7 @@ def register_operation_tools(mcp: FastMCP, k8s_operations: K8sOperations) -> Non
         try:
             result = k8s_operations.create_resource(resource_yaml)
             
-            return json.dumps(result, indent=2)
+            return json.dumps(result, indent=2, cls=DatetimeEncode, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error creating resource: {e}")
             return json.dumps({"success": False, "message": str(e)})
@@ -54,7 +62,7 @@ def register_operation_tools(mcp: FastMCP, k8s_operations: K8sOperations) -> Non
         try:
             result = k8s_operations.update_resource(resource_yaml)
             
-            return json.dumps(result, indent=2)
+            return json.dumps(result, indent=2, cls=DatetimeEncode, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error updating resource: {e}")
             return json.dumps({"success": False, "message": str(e)})
@@ -76,7 +84,7 @@ def register_operation_tools(mcp: FastMCP, k8s_operations: K8sOperations) -> Non
         try:
             result = k8s_operations.delete_resource(resource_type, name, namespace)
             
-            return json.dumps(result, indent=2)
+            return json.dumps(result, indent=2, cls=DatetimeEncode, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error deleting {resource_type} {name}: {e}")
             return json.dumps({"success": False, "message": str(e)})
@@ -98,7 +106,7 @@ def register_operation_tools(mcp: FastMCP, k8s_operations: K8sOperations) -> Non
         try:
             result = k8s_operations.scale_deployment(name, replicas, namespace)
             
-            return json.dumps(result, indent=2)
+            return json.dumps(result, indent=2, cls=DatetimeEncode, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error scaling deployment {name}: {e}")
             return json.dumps({"success": False, "message": str(e)})
@@ -119,7 +127,7 @@ def register_operation_tools(mcp: FastMCP, k8s_operations: K8sOperations) -> Non
         try:
             result = k8s_operations.restart_deployment(name, namespace)
             
-            return json.dumps(result, indent=2)
+            return json.dumps(result, indent=2, cls=DatetimeEncode, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error restarting deployment {name}: {e}")
             return json.dumps({"success": False, "message": str(e)})
@@ -146,7 +154,7 @@ def register_operation_tools(mcp: FastMCP, k8s_operations: K8sOperations) -> Non
             
             result = k8s_operations.execute_command(pod_name, command_list, namespace, container)
             
-            return json.dumps(result, indent=2)
+            return json.dumps(result, indent=2, cls=DatetimeEncode, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error executing command in pod {pod_name}: {e}")
             return json.dumps({"success": False, "message": str(e)})
