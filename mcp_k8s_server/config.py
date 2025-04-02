@@ -3,7 +3,7 @@
 import os
 import yaml
 from pathlib import Path
-from typing import List, Optional, Literal, Union
+from typing import List, Optional, Union
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -12,9 +12,9 @@ class ServerConfig(BaseModel):
     """Server configuration."""
     
     name: str = "mcp-k8s-server"
-    transport: Literal["stdio", "sse", "both"] = "stdio"
+    transport: str = "sse"  # "stdio" or "sse"
     port: int = 8000
-    host: str = "0.0.0.0"
+    host: str = "10.121.87.184"
 
 
 class KubernetesConfig(BaseModel):
@@ -58,7 +58,8 @@ class Config(BaseSettings):
 def find_config_file() -> Optional[Path]:
     """Find the configuration file."""
     # Check environment variable
-    if env_config := os.environ.get("MCP_K8S_SERVER_CONFIG"):
+    env_config = os.environ.get("MCP_K8S_SERVER_CONFIG")
+    if env_config:
         config_path = Path(env_config)
         if config_path.exists():
             return config_path

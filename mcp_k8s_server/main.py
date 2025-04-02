@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 @click.command()
 @click.option("--config", "-c", help="Path to config file")
 @click.option("--transport", "-t", 
-              type=click.Choice(["stdio", "sse", "both"]), 
-              help="Transport type (stdio, sse, or both)")
+              type=click.Choice(["stdio", "sse"]), 
+              help="Transport type (stdio or sse)")
 @click.option("--port", "-p", type=int, help="Port for SSE transport")
 @click.option("--host", "-h", help="Host for SSE transport")
 @click.option("--debug", "-d", is_flag=True, help="Enable debug logging")
@@ -51,12 +51,13 @@ def main(config: Optional[str] = None,
     
     # Run the server
     try:
-        asyncio.run(run_server(
+        # Run the server directly
+        run_server(
             config=config_obj,
             transport=transport,  # type: ignore
             port=port,
             host=host,
-        ))
+        )
     except Exception as e:
         logger.error(f"Error running server: {e}")
         sys.exit(1)

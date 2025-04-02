@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import sys
-from typing import Literal, Optional, Union
+from typing import Optional, Union
 
 from mcp.server.fastmcp import FastMCP
 
@@ -34,7 +34,11 @@ async def create_server(config: Optional[Config] = None) -> FastMCP:
         config = load_config()
     
     # Create the MCP server
-    mcp = FastMCP(config.server.name)
+    mcp = FastMCP(
+        config.server.name,
+        host=config.server.host,
+        port=config.server.port
+    )
     
     # Create the Kubernetes client
     k8s_client = K8sClient(config.kubernetes)
@@ -54,7 +58,7 @@ async def create_server(config: Optional[Config] = None) -> FastMCP:
     register_analysis_prompts(mcp)
     
     # Register resources
-    register_cluster_resources(mcp, k8s_client)
+    #register_cluster_resources(mcp, k8s_client)
     
     # Start monitoring
     if config.monitoring.enabled:
@@ -63,10 +67,10 @@ async def create_server(config: Optional[Config] = None) -> FastMCP:
     return mcp
 
 
-async def run_server(config: Optional[Config] = None, 
-                    transport: Optional[Union[Literal["stdio"], Literal["sse"], Literal["both"]]] = None,
-                    port: Optional[int] = None,
-                    host: Optional[str] = None) -> None:
+def run_server(config: Optional[Config] = None, 
+              transport: Optional[str] = None,
+              port: Optional[int] = None,
+              host: Optional[str] = None) -> None:
     """Run the MCP server.
     
     Args:
@@ -90,21 +94,21 @@ async def run_server(config: Optional[Config] = None,
         config.server.host = host
     
     # Create the MCP server
-    mcp = await create_server(config)
+    loop = asyncio.get_event_loop()
+    mcp = loop.run_until_complete(create_server(config))
     
     # Run the server
-    try:
+    try:        
         if config.server.transport == "stdio":
             logger.info("Starting MCP server with stdio transport")
-            await mcp.run(transport="stdio")
+            mcp.run(transport="stdio")
         elif config.server.transport == "sse":
             logger.info(f"Starting MCP server with SSE transport on {config.server.host}:{config.server.port}")
-            await mcp.run(transport="sse", host=config.server.host, port=config.server.port)
-        elif config.server.transport == "both":
-            logger.info(f"Starting MCP server with both transports (SSE on {config.server.host}:{config.server.port})")
-            await mcp.run(transport="both", host=config.server.host, port=config.server.port)
+            mcp.run(transport="sse")
         else:
+            # 'both' transport is not supported, so we treat it as an invalid transport type
             logger.error(f"Invalid transport type: {config.server.transport}")
+            logger.info("Supported transport types are 'stdio' and 'sse'")
             sys.exit(1)
     except KeyboardInterrupt:
         logger.info("Stopping MCP server")

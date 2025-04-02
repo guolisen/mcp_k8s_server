@@ -2,9 +2,9 @@
 
 server:
   name: mcp-k8s-server
-  transport: both  # stdio, sse, or both
+  transport: sse  # stdio or sse
   port: 8000
-  host: 0.0.0.0
+  host: 10.121.87.184
 
 kubernetes:
   # Path to kubeconfig file
