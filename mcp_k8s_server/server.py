@@ -33,11 +33,14 @@ async def create_server(config: Optional[Config] = None) -> FastMCP:
     if config is None:
         config = load_config()
     
-    # Create the MCP server
+    # Create the MCP server with initialization timeout
+    # This helps prevent "Received request before initialization was complete" errors
+    # by automatically closing connections that don't initialize properly
     mcp = FastMCP(
         config.server.name,
         host=config.server.host,
-        port=config.server.port
+        port=config.server.port,
+        settings={"initialization_timeout": 10.0}  # 10 second timeout
     )
     
     # Create the Kubernetes client
