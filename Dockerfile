@@ -32,8 +32,8 @@ RUN useradd -m mcp && \
 USER mcp
 
 # Default config location
-ENV CONFIG_PATH=/app/config/config.yaml
-ENV TRANSPORT=both
+ENV CONFIG_PATH=/etc/rancher/rke2/rke2.yaml
+ENV TRANSPORT=sse
 ENV PORT=8000
 ENV HOST=0.0.0.0
 ENV PYTHONUNBUFFERED=1

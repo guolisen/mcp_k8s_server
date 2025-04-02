@@ -17,7 +17,7 @@ spec:
       serviceAccountName: mcp-k8s-server
       containers:
       - name: mcp-k8s-server
-        image: mcp-k8s-server:latest
+        image: dockerrepo:30500/mcp-k8s-server:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
@@ -34,6 +34,18 @@ spec:
         volumeMounts:
         - name: config-volume
           mountPath: /app/config
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsGroup: 65534
+          runAsNonRoot: true
+          runAsUser: 65534
+          seccompProfile:
+            type: RuntimeDefault
       volumes:
       - name: config-volume
         configMap:

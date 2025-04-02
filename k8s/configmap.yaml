@@ -18,7 +18,7 @@ data:
       # Path to kubeconfig file
       # If empty, will try to use in-cluster config when running in Kubernetes
       # or ~/.kube/config when running locally
-      config_path: ""
+      config_path: " /etc/rancher/rke2/rke2.yaml"
       
       # Kubernetes context to use
       # If empty, will use the current context from kubeconfig
