@@ -61,9 +61,89 @@ docker run -p 8000:8000 -v ~/.kube:/home/mcp/.kube mcp-k8s-server
 kubectl apply -f k8s/
 ```
 
+When deploying to Kubernetes, the server will automatically use the in-cluster configuration. The Kubernetes manifests in the `k8s/` directory are set up to:
+
+1. Create a ServiceAccount with appropriate permissions
+2. Mount the service account token and certificate
+3. Set up the necessary environment variables
+
+You can customize the deployment by editing the manifests:
+
+```yaml
+# k8s/deployment.yaml (example)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-k8s-server
+  # ...
+spec:
+  # ...
+  template:
+    # ...
+    spec:
+      serviceAccountName: mcp-k8s-server  # Uses the ServiceAccount defined in rbac.yaml
+      containers:
+      - name: mcp-k8s-server
+        # ...
+        env:
+        - name: MCP_K8S_SERVER_NAMESPACE
+          value: "default"  # Set your default namespace
+        # No need to set KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT
+        # as they are automatically set by Kubernetes
+```
+
+The `KUBERNETES_SERVICE_HOST` and `KUBERNETES_SERVICE_PORT` environment variables are automatically set by Kubernetes when the pod is created, so you don't need to specify them in your deployment manifest.
+
 ## Configuration
 
 The server can be configured using a YAML configuration file, environment variables, or command-line arguments.
+
+### In-Cluster Configuration
+
+When running inside a Kubernetes cluster, the server automatically uses the in-cluster configuration. This relies on the following:
+
+1. Environment variables:
+   - `KUBERNETES_SERVICE_HOST`: Set by Kubernetes to the IP address of the Kubernetes API server
+   - `KUBERNETES_SERVICE_PORT`: Set by Kubernetes to the port of the Kubernetes API server
+
+2. Service account token and certificate:
+   - `/var/run/secrets/kubernetes.io/serviceaccount/token`: Service account token
+   - `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt`: CA certificate
+
+These are automatically set by Kubernetes when running in a pod. If you're running the server outside a Kubernetes cluster but want to test the in-cluster configuration, you would need to manually set these environment variables and create the token and certificate files.
+
+When running outside a cluster, the server falls back to using the kubeconfig file.
+
+### Testing In-Cluster Configuration Locally
+
+If you want to test the in-cluster configuration locally (outside a Kubernetes cluster), you can manually set up the required environment variables and files:
+
+1. Set the environment variables:
+   ```bash
+   export KUBERNETES_SERVICE_HOST=<kubernetes-api-server-ip>
+   export KUBERNETES_SERVICE_PORT=<kubernetes-api-server-port>
+   ```
+   
+   You can get these values by running:
+   ```bash
+   kubectl cluster-info
+   ```
+
+2. Create the service account token and certificate directories:
+   ```bash
+   mkdir -p /var/run/secrets/kubernetes.io/serviceaccount/
+   ```
+
+3. Copy your Kubernetes certificate and create a token:
+   ```bash
+   # Copy the CA certificate
+   kubectl config view --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}' | base64 -d > /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+   
+   # Create a token file (you can use a service account token or generate a temporary one)
+   echo "your-service-account-token" > /var/run/secrets/kubernetes.io/serviceaccount/token
+   ```
+
+Note that this approach requires root privileges to create files in `/var/run/secrets/`. Alternatively, you can modify the code to use different paths for testing purposes.
 
 ### Configuration File
 

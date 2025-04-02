@@ -9,7 +9,7 @@ from urllib.parse import quote, unquote
 from mcp.server.fastmcp import FastMCP
 from mcp.types import Resource
 
-from ..k8s.client import K8sClient
+from mcp_k8s_server.k8s.client import K8sClient
 
 logger = logging.getLogger(__name__)
 

@@ -7,8 +7,8 @@ from typing import Optional
 
 import click
 
-from .config import load_config
-from .server import run_server
+from mcp_k8s_server.config import load_config
+from mcp_k8s_server.server import run_server
 
 # Configure logging
 logging.basicConfig(

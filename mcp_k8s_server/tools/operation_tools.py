@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from mcp.server.fastmcp import FastMCP
 
-from ..k8s.operations import K8sOperations
+from mcp_k8s_server.k8s.operations import K8sOperations
 
 logger = logging.getLogger(__name__)
 

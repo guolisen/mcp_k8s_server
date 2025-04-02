@@ -7,15 +7,15 @@ from typing import Literal, Optional, Union
 
 from mcp.server.fastmcp import FastMCP
 
-from .config import Config, load_config
-from .k8s.client import K8sClient
-from .k8s.operations import K8sOperations
-from .k8s.monitoring import K8sMonitoring
-from .tools.resource_tools import register_resource_tools
-from .tools.operation_tools import register_operation_tools
-from .tools.monitoring_tools import register_monitoring_tools
-from .prompts.analysis_prompts import register_analysis_prompts
-from .resources.cluster_resources import register_cluster_resources
+from mcp_k8s_server.config import Config, load_config
+from mcp_k8s_server.k8s.client import K8sClient
+from mcp_k8s_server.k8s.operations import K8sOperations
+from mcp_k8s_server.k8s.monitoring import K8sMonitoring
+from mcp_k8s_server.tools.resource_tools import register_resource_tools
+from mcp_k8s_server.tools.operation_tools import register_operation_tools
+from mcp_k8s_server.tools.monitoring_tools import register_monitoring_tools
+from mcp_k8s_server.prompts.analysis_prompts import register_analysis_prompts
+from mcp_k8s_server.resources.cluster_resources import register_cluster_resources
 
 logger = logging.getLogger(__name__)
 

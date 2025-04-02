@@ -8,8 +8,8 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Callable
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from .client import K8sClient
-from ..config import MonitoringConfig
+from mcp_k8s_server.k8s.client import K8sClient
+from mcp_k8s_server.config import MonitoringConfig
 
 logger = logging.getLogger(__name__)
 

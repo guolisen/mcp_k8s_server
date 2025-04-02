@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from kubernetes import client, config, watch
 from kubernetes.client.rest import ApiException
 
-from ..config import KubernetesConfig
+from mcp_k8s_server.config import KubernetesConfig
 
 logger = logging.getLogger(__name__)
 
