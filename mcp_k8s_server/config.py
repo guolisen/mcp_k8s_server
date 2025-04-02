@@ -23,6 +23,7 @@ class KubernetesConfig(BaseModel):
     config_path: str = ""
     context: str = ""
     namespace: str = "default"
+    ssl_verify: bool = True
     resource_types: List[str] = Field(
         default=[
             "pods", "deployments", "services", "configmaps", "secrets",

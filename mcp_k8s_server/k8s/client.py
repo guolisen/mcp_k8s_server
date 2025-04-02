@@ -41,9 +41,17 @@ class K8sClient:
             # Fall back to kubeconfig
             config_path = self._get_kubeconfig_path()
             logger.info(f"Using kubeconfig from {config_path}")
+            
+            # Configure SSL verification
+            ssl_verify = self.config.ssl_verify
+            if not ssl_verify:
+                logger.warning("SSL verification is disabled. This is insecure and should only be used for testing.")
+            
+            # Load kubeconfig with SSL verification setting
             config.load_kube_config(
                 config_file=config_path,
-                context=self.config.context or None
+                context=self.config.context or None,
+                verify_ssl=ssl_verify
             )
         
         # Initialize API clients

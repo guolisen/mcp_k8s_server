@@ -159,6 +159,7 @@ kubernetes:
   config_path: ~/.kube/config
   context: default
   namespace: default
+  ssl_verify: true  # Set to false to disable SSL certificate verification (insecure)
 ```
 
 ### Environment Variables
@@ -169,6 +170,50 @@ kubernetes:
 - `MCP_K8S_SERVER_CONFIG_PATH`: Path to Kubernetes config file
 - `MCP_K8S_SERVER_CONTEXT`: Kubernetes context
 - `MCP_K8S_SERVER_NAMESPACE`: Kubernetes namespace
+- `MCP_K8S_SERVER_KUBERNETES__SSL_VERIFY`: SSL verification (true/false)
+
+## SSL Verification
+
+By default, the server verifies SSL certificates when connecting to the Kubernetes API server. This is the recommended setting for production environments to ensure secure communication.
+
+However, in some development or testing scenarios, you might need to disable SSL verification:
+
+1. When using self-signed certificates
+2. When testing with a local Kubernetes cluster without proper certificates
+3. When troubleshooting certificate issues
+
+To disable SSL verification, set the `ssl_verify` option to `false` in your configuration:
+
+```yaml
+# config.yaml
+kubernetes:
+  ssl_verify: false  # Disable SSL verification (insecure)
+```
+
+Or using environment variables:
+
+```bash
+export MCP_K8S_SERVER_KUBERNETES__SSL_VERIFY=false
+```
+
+**Warning**: Disabling SSL verification is insecure and should only be used for testing purposes. It makes your connection vulnerable to man-in-the-middle attacks.
+
+### Testing SSL Verification
+
+The project includes several test scripts for testing SSL verification settings:
+
+```bash
+# Run all SSL verification tests
+python tests/run_all_tests.py --ssl-verify
+
+# Test with SSL verification disabled
+python tests/test_k8s_connection.py --config config/test_config_no_ssl_verify.yaml
+
+# Test with SSL verification enabled
+python tests/test_k8s_connection.py --config config/config.yaml
+```
+
+See the [tests/README.md](tests/README.md) file for more information about the available tests.
 
 ## MCP Tools
 
