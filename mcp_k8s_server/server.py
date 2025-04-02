@@ -3,9 +3,10 @@
 import asyncio
 import logging
 import sys
-from typing import Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ClientRequest, CallToolRequest
 
 from mcp_k8s_server.config import Config, load_config
 from mcp_k8s_server.k8s.client import K8sClient
@@ -54,8 +55,8 @@ def create_server(config: Optional[Config] = None) -> FastMCP:
     
     # Register tools
     register_resource_tools(mcp, k8s_client)
-    #register_operation_tools(mcp, k8s_operations)
-    #register_monitoring_tools(mcp, k8s_monitoring)
+    register_operation_tools(mcp, k8s_operations)
+    register_monitoring_tools(mcp, k8s_monitoring)
     
     # Register prompts
     register_analysis_prompts(mcp)
@@ -64,8 +65,8 @@ def create_server(config: Optional[Config] = None) -> FastMCP:
     #register_cluster_resources(mcp, k8s_client)
     
     # Start monitoring
-    #if config.monitoring.enabled:
-    #    k8s_monitoring.start_monitoring()
+    if config.monitoring.enabled:
+        k8s_monitoring.start_monitoring()
     
     return mcp
 

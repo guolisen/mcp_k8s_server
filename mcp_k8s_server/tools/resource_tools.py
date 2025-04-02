@@ -10,7 +10,7 @@ from mcp_k8s_server.k8s.client import K8sClient
 
 logger = logging.getLogger(__name__)
 
-class DatetimeEncode(json.JSONEncoder):
+class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime.datetime):
             return obj.strftime('%Y-%m-%d %H:%M:%S')
@@ -63,7 +63,7 @@ def register_resource_tools(mcp: FastMCP, k8s_client: K8sClient) -> None:
             else:
                 return json.dumps({"error": f"Unsupported resource type: {resource_type}"})
             
-            return json.dumps(resources, indent=2, cls=DatetimeEncode, ensure_ascii=False)
+            return json.dumps(resources, indent=2, cls=DateTimeEncoder, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error getting {resource_type}: {e}")
             return json.dumps({"error": str(e)})
@@ -103,7 +103,7 @@ def register_resource_tools(mcp: FastMCP, k8s_client: K8sClient) -> None:
             if resource is None:
                 return json.dumps({"error": f"{resource_type} {name} not found"})
             
-            return json.dumps(resource, indent=2, cls=DatetimeEncode, ensure_ascii=False)
+            return json.dumps(resource, indent=2, cls=DateTimeEncoder, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error getting {resource_type} {name}: {e}")
             return json.dumps({"error": str(e)})
@@ -146,7 +146,7 @@ def register_resource_tools(mcp: FastMCP, k8s_client: K8sClient) -> None:
             # Extract status from the resource
             status = resource.get("status", {})
             
-            return json.dumps(status, indent=2, cls=DatetimeEncode, ensure_ascii=False)
+            return json.dumps(status, indent=2, cls=DateTimeEncoder, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error getting status of {resource_type} {name}: {e}")
             return json.dumps({"error": str(e)})
@@ -168,7 +168,7 @@ def register_resource_tools(mcp: FastMCP, k8s_client: K8sClient) -> None:
         try:
             events = k8s_client.get_resource_events(resource_type, name, namespace)
             
-            return json.dumps(events, indent=2, cls=DatetimeEncode, ensure_ascii=False)
+            return json.dumps(events, indent=2, cls=DateTimeEncoder, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error getting events for {resource_type} {name}: {e}")
             return json.dumps({"error": str(e)})
