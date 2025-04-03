@@ -163,15 +163,6 @@ kubernetes:
   namespace: default
 ```
 
-### Environment Variables
-
-- `MCP_K8S_SERVER_TRANSPORT`: Transport type (stdio, sse, or both)
-- `MCP_K8S_SERVER_PORT`: Port for SSE transport
-- `MCP_K8S_SERVER_HOST`: Host for SSE transport
-- `MCP_K8S_SERVER_CONFIG_PATH`: Path to Kubernetes config file
-- `MCP_K8S_SERVER_CONTEXT`: Kubernetes context
-- `MCP_K8S_SERVER_NAMESPACE`: Kubernetes namespace
-
 ## MCP Tools
 
 The server provides the following MCP tools:
