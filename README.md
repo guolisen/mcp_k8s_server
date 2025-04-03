@@ -2,7 +2,7 @@
 
 A Kubernetes management MCP (Model Context Protocol) server that provides interfaces for getting information about Kubernetes clusters, performing operations, monitoring status, and analyzing resources.
 
-Currently, mcp_k8s_server only support that deploy to k8s as POD. 
+Currently, mcp_k8s_server exclusively supports deploying to Kubernetes as Pods, though it will support other deployment methods in the future.
 
 ## Features
 
