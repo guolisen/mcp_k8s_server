@@ -13,6 +13,36 @@ from mcp_k8s_server.config import KubernetesConfig
 logger = logging.getLogger(__name__)
 
 
+def prepareKubeConfig(config_path: Optional[str] = None, context: Optional[str] = None):
+    """Prepare Kubernetes configuration.
+    
+    Args:
+        config_path: Path to the kubeconfig file. If None, uses the default path.
+        context: Kubernetes context to use. If None, uses the current context.
+    
+    Returns:
+        Tuple of (CoreV1Api, Configuration)
+    """
+    configuration = client.Configuration()
+    try:
+        config.load_incluster_config(client_configuration=configuration)
+        logger.info("Using in-cluster Kubernetes configuration")
+    except config.ConfigException:
+        # Fall back to kubeconfig
+        if not config_path:
+            config_path = os.path.expanduser("~/.kube/config")
+        
+        logger.info(f"Using kubeconfig from {config_path}")
+        config.load_kube_config(
+            config_file=config_path,
+            context=context,
+            client_configuration=configuration
+        )
+    
+    configuration.verify_ssl = False
+    v1 = client.CoreV1Api(client.ApiClient(configuration))
+    return v1, configuration
+
 class K8sClient:
     """Kubernetes client wrapper."""
 
@@ -29,31 +59,25 @@ class K8sClient:
         self.networking_v1_api = None
         self.storage_v1_api = None
         self.custom_objects_api = None
+        self.configuration = None
         self._init_client()
 
     def _init_client(self) -> None:
         """Initialize the Kubernetes client."""
-        try:
-            # Try to load in-cluster config first
-            config.load_incluster_config()
-            logger.info("Using in-cluster Kubernetes configuration")
-        except config.ConfigException:
-            # Fall back to kubeconfig
-            config_path = self._get_kubeconfig_path()
-            logger.info(f"Using kubeconfig from {config_path}")
-            config.load_kube_config(
-                config_file=config_path,
-                context=self.config.context or None
-            )
+        # Use prepareKubeConfig to get the configuration
+        config_path = self._get_kubeconfig_path()
+        v1, configuration = prepareKubeConfig(config_path=config_path, context=self.config.context)
+        self.configuration = configuration
         
-        # Initialize API clients
-        self.core_v1_api = client.CoreV1Api()
-        self.apps_v1_api = client.AppsV1Api()
-        self.batch_v1_api = client.BatchV1Api()
-        self.networking_v1_api = client.NetworkingV1Api()
-        self.storage_v1_api = client.StorageV1Api()
-        self.custom_objects_api = client.CustomObjectsApi()
-
+        # Initialize API clients with the shared configuration
+        api_client = client.ApiClient(configuration)
+        self.core_v1_api = v1  # Already initialized by prepareKubeConfig
+        self.apps_v1_api = client.AppsV1Api(api_client)
+        self.batch_v1_api = client.BatchV1Api(api_client)
+        self.networking_v1_api = client.NetworkingV1Api(api_client)
+        self.storage_v1_api = client.StorageV1Api(api_client)
+        self.custom_objects_api = client.CustomObjectsApi(api_client)
+        
     def _get_kubeconfig_path(self) -> str:
         """Get the path to the kubeconfig file.
         
@@ -65,6 +89,75 @@ class K8sClient:
         
         # Default to ~/.kube/config
         return os.path.expanduser("~/.kube/config")
+
+    def list_custom_resources(self, group: str, version: str, plural: str, 
+                             namespace: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List custom resources.
+        
+        Args:
+            group: API group of the custom resource.
+            version: API version of the custom resource.
+            plural: Plural name of the custom resource.
+            namespace: Namespace of the custom resource. If None, uses the default namespace.
+        
+        Returns:
+            List of custom resources.
+        """
+        try:
+            namespace = namespace or self.config.namespace
+            logger.info(f"Listing custom resources: {group}/{version}/{plural} in namespace {namespace}")
+            
+            with client.ApiClient(self.configuration) as api_client:
+                api_instance = client.CustomObjectsApi(api_client)
+                try:
+                    if namespace == "all" or namespace is None:
+                        api_response = api_instance.list_cluster_custom_object(group, version, plural)
+                    else:
+                        api_response = api_instance.list_namespaced_custom_object(
+                            group, version, namespace, plural
+                        )
+                    return api_response.get("items", [])
+                except ApiException as e:
+                    logger.error(f"Exception when calling CustomObjectsApi to list resources: {e}")
+                    return []
+        except Exception as e:
+            logger.error(f"Error listing custom resources: {e}")
+            return []
+
+    def get_custom_resource(self, group: str, version: str, plural: str, name: str, 
+                           namespace: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Get a custom resource.
+        
+        Args:
+            group: API group of the custom resource.
+            version: API version of the custom resource.
+            plural: Plural name of the custom resource.
+            name: Name of the custom resource.
+            namespace: Namespace of the custom resource. If None, uses the default namespace.
+        
+        Returns:
+            Custom resource or None if not found.
+        """
+        try:
+            namespace = namespace or self.config.namespace
+            logger.info(f"Getting custom resource: {group}/{version}/{plural}/{name} in namespace {namespace}")
+            
+            with client.ApiClient(self.configuration) as api_client:
+                api_instance = client.CustomObjectsApi(api_client)
+                try:
+                    if namespace == "all" or namespace is None:
+                        api_response = api_instance.get_cluster_custom_object(group, version, plural, name)
+                    else:
+                        api_response = api_instance.get_namespaced_custom_object(
+                            group, version, namespace, plural, name
+                        )
+                    return api_response
+                except ApiException as e:
+                    logger.error(f"Exception when calling CustomObjectsApi: {e}")
+                    return None
+        except Exception as e:
+            logger.error(f"Error getting custom resource: {e}")
+            return None
 
     def get_namespaces(self) -> List[Dict[str, Any]]:
         """Get all namespaces.
