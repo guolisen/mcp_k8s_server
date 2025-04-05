@@ -41,10 +41,6 @@ ENV PYTHONUNBUFFERED=1
 # Expose port for SSE
 EXPOSE 8000
 
-# Run the server with command and args pattern
-#CMD ["python", "-m", "mcp_k8s_server.main", \
-#     "--transport", "sse", \
-#     "--port", "8000", \
-#     "--host", "0.0.0.0", \
-#     "--config", "/etc/rancher/rke2/rke2.yaml", \
-#     "--debug"]
+# Run the server
+ENTRYPOINT ["python", "-m", "mcp_k8s_server.main"]
+CMD ["--transport", "${TRANSPORT}", "--port", "${PORT}", "--host", "${HOST}", "--config", "${CONFIG_PATH}"]
