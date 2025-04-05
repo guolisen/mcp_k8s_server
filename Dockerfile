@@ -42,5 +42,9 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 # Run the server
-ENTRYPOINT ["python", "-m", "mcp_k8s_server.main"]
-CMD ["--transport", "${TRANSPORT}", "--port", "${PORT}", "--host", "${HOST}", "--config", "${CONFIG_PATH}"]
+#CMD ["python", "-m", "mcp_k8s_server.main", \
+#     "--transport", "${TRANSPORT}", \
+#     "--port", "${PORT}", \
+#     "--host", "${HOST}", \
+#     "--config", "${CONFIG_PATH}", \
+#     "--debug"]
