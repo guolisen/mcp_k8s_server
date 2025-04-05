@@ -1,10 +1,19 @@
 #!/bin/bash
+#
+# Copyright (c) 2025, Lewis Guo. All rights reserved.
+# Author: Lewis Guo <guolisen@gmail.com>
+# Created: April 05, 2025
+#
+# Description: Shell script for the MCP Kubernetes server: deploy.sh
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 set -e
 
 # Configuration
 DOCKER_REGISTRY="guolisen"
 IMAGE_NAME="mcp-k8s-server"
-IMAGE_TAG="1.8"
+IMAGE_TAG="2.0"
 FULL_IMAGE_NAME="${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
 
 # Build the Docker image

@@ -1,3 +1,12 @@
+# Copyright (c) 2025, Lewis Guo. All rights reserved.
+# Author: Lewis Guo <guolisen@gmail.com>
+# Created: April 05, 2025
+#
+# Description: Dockerfile for building the MCP Kubernetes server container image.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 # Multi-stage build for smaller final image
 FROM python:3.13-slim AS builder
 
@@ -42,9 +51,9 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 # Run the server
-#CMD ["python", "-m", "mcp_k8s_server.main", \
-#     "--transport", "${TRANSPORT}", \
-#     "--port", "${PORT}", \
-#     "--host", "${HOST}", \
-#     "--config", "${CONFIG_PATH}", \
-#     "--debug"]
+CMD "python" "-m" "mcp_k8s_server.main" \
+     "--transport" "$TRANSPORT" \
+     "--port" "$PORT" \
+     "--host" "$HOST" \
+     "--config" "$CONFIG_PATH" \
+     "--debug"

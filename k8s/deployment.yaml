@@ -1,3 +1,12 @@
+# Copyright (c) 2025, Lewis Guo. All rights reserved.
+# Author: Lewis Guo <guolisen@gmail.com>
+# Created: April 05, 2025
+#
+# Description: YAML configuration for the MCP Kubernetes server: deployment.yaml
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,25 +26,11 @@ spec:
       serviceAccountName: mcp-k8s-server
       containers:
       - name: mcp-k8s-server
-        image: guolisen/mcp-k8s-server:1.8
+        image: guolisen/mcp-k8s-server:2.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
           name: http
-        command:
-        - python
-        - -m
-        - mcp_k8s_server.main
-        args:
-        - --transport
-        - sse
-        - --port
-        - "8000"
-        - --host
-        - "127.0.0.1"
-        - --config
-        - "/app/config/config.yaml"
-        - --debug
         env:
         - name: TRANSPORT
           value: "sse"

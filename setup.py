@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2025, Lewis Guo. All rights reserved.
+# Author: Lewis Guo <guolisen@gmail.com>
+# Created: April 05, 2025
+#
+# Description: Python module for the MCP Kubernetes server: setup.py
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 #!/usr/bin/env python
 
 from setuptools import setup, find_packages

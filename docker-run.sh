@@ -1,4 +1,13 @@
 #!/bin/bash
+#
+# Copyright (c) 2025, Lewis Guo. All rights reserved.
+# Author: Lewis Guo <guolisen@gmail.com>
+# Created: April 05, 2025
+#
+# Description: Shell script for the MCP Kubernetes server: docker-run.sh
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 set -e
 
 # Configuration

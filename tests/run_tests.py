@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Test runner for MCP Kubernetes server tests."""
+# -*- coding: utf-8 -*-
+# Copyright (c) 2025, Lewis Guo. All rights reserved.
+# Author: Lewis Guo <guolisen@gmail.com>
+# Created: April 05, 2025
+#
+# Description: Test runner for MCP Kubernetes server tests.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 
 import unittest
 import sys
