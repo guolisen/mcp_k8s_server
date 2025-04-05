@@ -4,13 +4,13 @@ server:
   name: mcp-k8s-server
   transport: sse  # stdio or sse
   port: 8000
-  host: 0.0.0.0
+  host: 192.168.182.128
 
 kubernetes:
   # Path to kubeconfig file
   # If empty, will try to use in-cluster config when running in Kubernetes
   # or ~/.kube/config; /etc/rancher/rke2/rke2.yaml when running locally
-  config_path: "/etc/rancher/rke2/rke2.yaml"
+  config_path: ""
   
   # Kubernetes context to use
   # If empty, will use the current context from kubeconfig
@@ -40,7 +40,7 @@ kubernetes:
 
 monitoring:
   # Enable monitoring features
-  enabled: true
+  enabled: false
   
   # Polling interval in seconds
   interval: 30
