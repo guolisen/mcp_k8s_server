@@ -17,20 +17,25 @@ spec:
       serviceAccountName: mcp-k8s-server
       containers:
       - name: mcp-k8s-server
-        image: dockerrepo:30500/mcp-k8s-server:latest
+        image: dockerrepo:30500/mcp-k8s-server:1.1
         imagePullPolicy: IfNotPresent
+        command:
+        - python
+        - -m
+        - mcp_k8s_server.main
+        args:
+        - --transport
+        - sse
+        - --port
+        - "8000"
+        - --host
+        - "0.0.0.0"
+        - --config
+        - "/app/config/config.yaml"
+        - --debug
         ports:
         - containerPort: 8000
           name: http
-        env:
-        - name: TRANSPORT
-          value: "sse"
-        - name: PORT
-          value: "8000"
-        - name: HOST
-          value: "0.0.0.0"
-        - name: CONFIG_PATH
-          value: "/app/config/config.yaml"
         volumeMounts:
         - name: config-volume
           mountPath: /app/config

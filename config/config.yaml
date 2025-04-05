@@ -9,7 +9,7 @@ server:
 kubernetes:
   # Path to kubeconfig file
   # If empty, will try to use in-cluster config when running in Kubernetes
-  # or ~/.kube/config when running locally
+  # or ~/.kube/config; /etc/rancher/rke2/rke2.yaml when running locally
   config_path: ""
   
   # Kubernetes context to use
@@ -40,7 +40,7 @@ kubernetes:
 
 monitoring:
   # Enable monitoring features
-  enabled: true
+  enabled: false
   
   # Polling interval in seconds
   interval: 30

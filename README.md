@@ -48,6 +48,19 @@ mcp-k8s-server --config /path/to/config.yaml
 
 ### Using Docker
 
+The Dockerfile uses the command and args pattern to run the server:
+
+```dockerfile
+CMD ["python", "-m", "mcp_k8s_server.main", \
+     "--transport", "sse", \
+     "--port", "8000", \
+     "--host", "0.0.0.0", \
+     "--config", "/etc/rancher/rke2/rke2.yaml", \
+     "--debug"]
+```
+
+To build and run the Docker container:
+
 ```bash
 # Build the Docker image
 docker build -t mcp-k8s-server .
@@ -55,6 +68,18 @@ docker build -t mcp-k8s-server .
 # Run the Docker container
 docker run -p 8000:8000 -v ~/.kube:/home/mcp/.kube mcp-k8s-server
 ```
+
+Alternatively, you can use the provided script:
+
+```bash
+# Make the script executable
+chmod +x docker-run.sh
+
+# Run the script
+./docker-run.sh
+```
+
+This script builds the Docker image and runs the container with the necessary volume mounts.
 
 ### Deploying to Kubernetes
 
@@ -67,7 +92,7 @@ When deploying to Kubernetes, the server will automatically use the in-cluster c
 
 1. Create a ServiceAccount with appropriate permissions
 2. Mount the service account token and certificate
-3. Set up the necessary environment variables
+3. Configure the server with command-line arguments
 
 You can customize the deployment by editing the manifests:
 
@@ -87,12 +112,23 @@ spec:
       containers:
       - name: mcp-k8s-server
         # ...
-        env:
-        - name: MCP_K8S_SERVER_NAMESPACE
-          value: "default"  # Set your default namespace
-        # No need to set KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT
-        # as they are automatically set by Kubernetes
+        command:
+        - python
+        - -m
+        - mcp_k8s_server.main
+        args:
+        - --transport
+        - sse
+        - --port
+        - "8000"
+        - --host
+        - "0.0.0.0"
+        - --config
+        - "/app/config/config.yaml"
+        - --debug
 ```
+
+This approach uses the command and args pattern to configure the server, which is a common pattern in Kubernetes. The command specifies the executable to run, and the args specify the command-line arguments to pass to the executable.
 
 The `KUBERNETES_SERVICE_HOST` and `KUBERNETES_SERVICE_PORT` environment variables are automatically set by Kubernetes when the pod is created, so you don't need to specify them in your deployment manifest.
 
