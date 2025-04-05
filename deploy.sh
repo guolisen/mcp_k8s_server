@@ -13,7 +13,7 @@ set -e
 # Configuration
 DOCKER_REGISTRY="guolisen"
 IMAGE_NAME="mcp-k8s-server"
-IMAGE_TAG="2.0"
+IMAGE_TAG=$1
 FULL_IMAGE_NAME="${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
 
 # Build the Docker image

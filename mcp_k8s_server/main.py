@@ -47,7 +47,7 @@ def main(config: Optional[str] = None,
     """Run the MCP Kubernetes server."""
     # Set log level
     if debug:
-        logging.getLogger().setLevel(logging.DEBUG)
+        logging.getLogger().setLevel(logging.INFO)
         logger.debug("Debug logging enabled")
     
     # Load configuration
