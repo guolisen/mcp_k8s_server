@@ -74,7 +74,7 @@ def create_server(config: Optional[Config] = None) -> FastMCP:
     register_analysis_prompts(mcp)
     
     # Register resources
-    #register_cluster_resources(mcp, k8s_client)
+    register_cluster_resources(mcp, k8s_client)
     
     # Start monitoring
     if config.monitoring.enabled:
