@@ -210,8 +210,8 @@ class K8sMonitoring:
         Returns:
             Dictionary with resource metrics.
         """
-        if not self.metrics_api:
-            return {"error": "Metrics API not available"}
+        # We don't need to check for metrics_api availability here since our implementation now uses
+        # the client's list_custom_resources method which is more robust
         
         try:
             namespace = namespace or self.client.config.namespace
@@ -292,13 +292,12 @@ class K8sMonitoring:
                     "qosClass": status.get("qos_class"),
                 }
                 
-                # Add metrics if available
-                if self.metrics_api:
-                    try:
-                        metrics = self._get_pod_metrics(name, namespace)
-                        pod_status["metrics"] = metrics
-                    except Exception as e:
-                        logger.debug(f"Error getting metrics for pod {name}: {e}")
+                # Add metrics
+                try:
+                    metrics = self._get_pod_metrics(name, namespace)
+                    pod_status["metrics"] = metrics
+                except Exception as e:
+                    logger.debug(f"Error getting metrics for pod {name}: {e}")
                 
                 new_status[key] = pod_status
             
@@ -350,13 +349,12 @@ class K8sMonitoring:
                     "kubeletVersion": status.get("node_info", {}).get("kubelet_version"),
                 }
                 
-                # Add metrics if available
-                if self.metrics_api:
-                    try:
-                        metrics = self._get_node_metrics(name)
-                        node_status["metrics"] = metrics
-                    except Exception as e:
-                        logger.debug(f"Error getting metrics for node {name}: {e}")
+                # Add metrics
+                try:
+                    metrics = self._get_node_metrics(name)
+                    node_status["metrics"] = metrics
+                except Exception as e:
+                    logger.debug(f"Error getting metrics for node {name}: {e}")
                 
                 new_status[name] = node_status
             
@@ -495,17 +493,28 @@ class K8sMonitoring:
             Dictionary with pod metrics.
         """
         try:
-            metrics = self.metrics_api.get_namespaced_custom_object(
+            # Use list_custom_resources instead of direct get_namespaced_custom_object
+            metrics_list = self.client.list_custom_resources(
                 group="metrics.k8s.io",
                 version="v1beta1",
-                namespace=namespace,
                 plural="pods",
-                name=name,
+                namespace=namespace
             )
             
+            # Find the specific pod in the list
+            pod_metrics = None
+            for item in metrics_list:
+                if item.get("metadata", {}).get("name") == name:
+                    pod_metrics = item
+                    break
+                    
+            if not pod_metrics:
+                logger.debug(f"Metrics not found for pod {name}")
+                return {}
+                
             # Extract container metrics
             container_metrics = {}
-            for container in metrics.get("containers", []):
+            for container in pod_metrics.get("containers", []):
                 container_name = container.get("name")
                 usage = container.get("usage", {})
                 
@@ -544,15 +553,19 @@ class K8sMonitoring:
                 }
             
             return {
-                "timestamp": metrics.get("timestamp"),
-                "window": metrics.get("window"),
+                "timestamp": pod_metrics.get("timestamp"),
+                "window": pod_metrics.get("window"),
                 "containers": container_metrics,
             }
         except ApiException as e:
             if e.status == 404:
                 logger.debug(f"Metrics not found for pod {name}")
                 return {}
-            raise
+            logger.warning(f"Error fetching metrics for pod {name}: {e}")
+            return {}
+        except Exception as e:
+            logger.warning(f"Unexpected error fetching metrics for pod {name}: {e}")
+            return {}
 
     def _get_node_metrics(self, name: str) -> Dict[str, Any]:
         """Get metrics for a node.
@@ -564,14 +577,26 @@ class K8sMonitoring:
             Dictionary with node metrics.
         """
         try:
-            metrics = self.metrics_api.get_cluster_custom_object(
+            # Use list_custom_resources instead of direct get_cluster_custom_object
+            metrics_list = self.client.list_custom_resources(
                 group="metrics.k8s.io",
                 version="v1beta1",
                 plural="nodes",
-                name=name,
+                namespace=None  # Nodes are cluster-scoped, not namespaced
             )
             
-            usage = metrics.get("usage", {})
+            # Find the specific node in the list
+            node_metrics = None
+            for item in metrics_list:
+                if item.get("metadata", {}).get("name") == name:
+                    node_metrics = item
+                    break
+                    
+            if not node_metrics:
+                logger.debug(f"Metrics not found for node {name}")
+                return {}
+            
+            usage = node_metrics.get("usage", {})
             
             cpu = usage.get("cpu", "0")
             memory = usage.get("memory", "0")
@@ -597,8 +622,8 @@ class K8sMonitoring:
                 memory_mib = int(memory) / (1024 * 1024)
             
             return {
-                "timestamp": metrics.get("timestamp"),
-                "window": metrics.get("window"),
+                "timestamp": node_metrics.get("timestamp"),
+                "window": node_metrics.get("window"),
                 "cpu": {
                     "raw": cpu,
                     "millicores": cpu_millicores,
@@ -612,4 +637,8 @@ class K8sMonitoring:
             if e.status == 404:
                 logger.debug(f"Metrics not found for node {name}")
                 return {}
-            raise
+            logger.warning(f"Error fetching metrics for node {name}: {e}")
+            return {}
+        except Exception as e:
+            logger.warning(f"Unexpected error fetching metrics for node {name}: {e}")
+            return {}

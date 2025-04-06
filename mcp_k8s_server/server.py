@@ -63,12 +63,12 @@ def create_server(config: Optional[Config] = None) -> FastMCP:
     k8s_operations = K8sOperations(k8s_client)
     
     # Create the Kubernetes monitoring
-    #k8s_monitoring = K8sMonitoring(k8s_client, config.monitoring)
+    k8s_monitoring = K8sMonitoring(k8s_client, config.monitoring)
     
     # Register tools
     register_resource_tools(mcp, k8s_client)
     register_operation_tools(mcp, k8s_operations)
-    #register_monitoring_tools(mcp, k8s_monitoring)
+    register_monitoring_tools(mcp, k8s_monitoring)
     
     # Register prompts
     register_analysis_prompts(mcp)
@@ -77,8 +77,8 @@ def create_server(config: Optional[Config] = None) -> FastMCP:
     #register_cluster_resources(mcp, k8s_client)
     
     # Start monitoring
-    #if config.monitoring.enabled:
-    #    k8s_monitoring.start_monitoring()
+    if config.monitoring.enabled:
+        k8s_monitoring.start_monitoring()
     
     return mcp
 

@@ -49,7 +49,7 @@ kubernetes:
 
 monitoring:
   # Enable monitoring features
-  enabled: false
+  enabled: true
   
   # Polling interval in seconds
   interval: 30
@@ -59,6 +59,7 @@ monitoring:
     - pods
     - nodes
     - deployments
+    - volume
     
   # Metrics to collect
   metrics:

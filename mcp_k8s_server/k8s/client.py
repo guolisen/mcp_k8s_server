@@ -44,7 +44,7 @@ def prepareKubeConfig(config_path: Optional[str] = None, context: Optional[str] 
         logger.info(f"Using kubeconfig from {config_path}")
         config.load_kube_config(
             config_file=config_path,
-            context=context,
+            context=None,
             client_configuration=configuration
         )
     
