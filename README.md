@@ -199,6 +199,46 @@ kubernetes:
   namespace: default
 ```
 
+## MCP Resources
+
+The server provides access to Kubernetes resources through the Model Context Protocol (MCP). Resources are identified by URI patterns following the `k8s://` protocol.
+
+### Resource URI Patterns
+
+Resources are organized in a hierarchical structure:
+
+- `k8s://resources` - List of all available Kubernetes resources
+- `k8s://namespaces` - List of all Kubernetes namespaces
+- `k8s:///{namespace}` - Overview of all resources in a namespace
+
+#### Namespaced Resources
+
+- `k8s://{namespace}/{resource_type}` - List resources of a specific type in a namespace
+  - Example: `k8s://default/pods` - All pods in the 'default' namespace
+  
+- `k8s://{namespace}/{resource_type}/{name}` - Get a specific namespaced resource
+  - Example: `k8s://default/deployments/nginx` - The 'nginx' deployment in the 'default' namespace
+
+Supported resource types:
+- `pods`
+- `deployments`
+- `services`
+- `persistentvolumeclaims`
+- `events`
+
+#### Cluster-Scoped Resources
+
+- `k8s:///{resource_type}` - List cluster-scoped resources of a specific type
+  - Example: `k8s:///nodes` - All nodes in the cluster
+  
+- `k8s:///{resource_type}/{name}` - Get a specific cluster-scoped resource
+  - Example: `k8s:///nodes/worker-1` - The 'worker-1' node
+
+Supported resource types:
+- `nodes`
+- `persistentvolumes`
+- `namespaces`
+
 ## MCP Tools
 
 The server provides the following MCP tools:
