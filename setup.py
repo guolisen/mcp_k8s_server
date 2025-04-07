@@ -15,7 +15,8 @@ from setuptools import setup, find_packages
 if __name__ == "__main__":
     setup(
         name="mcp-k8s-server",
-        version="0.1.0",
+        version="0.1.1",
+        license="MIT",
         packages=[
             "mcp_k8s_server",
             "mcp_k8s_server.k8s",
