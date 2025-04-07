@@ -112,6 +112,7 @@ class K8sClient:
         Returns:
             List of custom resources.
         """
+        return []
         try:
             namespace = namespace or self.config.namespace
             logger.info(f"Listing custom resources: {group}/{version}/{plural} in namespace {namespace}")

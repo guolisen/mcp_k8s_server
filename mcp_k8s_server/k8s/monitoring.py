@@ -264,20 +264,21 @@ class K8sMonitoring:
                 name = pod["name"]
                 namespace = pod["namespace"]
                 key = f"{namespace}/{name}"
-                
                 status = pod.get("status", {})
                 phase = status.get("phase", "Unknown")
                 
                 # Extract container statuses
                 container_statuses = []
-                for container in status.get("container_statuses", []):
-                    container_status = {
-                        "name": container.get("name"),
-                        "ready": container.get("ready", False),
-                        "restartCount": container.get("restart_count", 0),
-                        "state": next(iter(container.get("state", {}).keys()), "unknown"),
-                    }
-                    container_statuses.append(container_status)
+                cs = status.get("container_statuses", [])
+                if cs != None:
+                    for container in status.get("container_statuses", []):
+                        container_status = {
+                            "name": container.get("name"),
+                            "ready": container.get("ready", False),
+                            "restartCount": container.get("restart_count", 0),
+                            "state": next(iter(container.get("state", {}).keys()), "unknown"),
+                        }
+                        container_statuses.append(container_status)
                 
                 # Build the pod status
                 pod_status = {

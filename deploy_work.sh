@@ -19,7 +19,8 @@ FULL_IMAGE_NAME="${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
 # Build the Docker image
 echo "Building Docker image: ${FULL_IMAGE_NAME}"
 docker build -t ${FULL_IMAGE_NAME} .
-rm /var/lib/ddcontainers/mcp_k8s_server/images/*
+mkdir -p /var/lib/ddcontainers/mcp_k8s_server/images/
+#rm /var/lib/ddcontainers/mcp_k8s_server/images/
 docker image save -o /var/lib/ddcontainers/mcp_k8s_server/images/${IMAGE_NAME}-${IMAGE_TAG}.tar ${FULL_IMAGE_NAME}
 
 # Push the Docker image to the registry
