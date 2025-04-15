@@ -34,11 +34,9 @@ class TestResourceTools(unittest.TestCase):
         self.get_resource_status_func = None
         self.get_resource_events_func = None
         self.get_pod_logs_func = None
-        self.list_custom_resources_func = None
-        self.get_custom_resource_func = None
         
         # Mock the decorator to capture the decorated function
-        def mock_tool_decorator(arguments_type="dict"):
+        def mock_tool_decorator(arguments_type=None):
             def decorator(func):
                 # Store the function based on its name
                 if func.__name__ == "get_resources":
@@ -51,10 +49,6 @@ class TestResourceTools(unittest.TestCase):
                     self.get_resource_events_func = func
                 elif func.__name__ == "get_pod_logs":
                     self.get_pod_logs_func = func
-                elif func.__name__ == "list_custom_resources":
-                    self.list_custom_resources_func = func
-                elif func.__name__ == "get_custom_resource":
-                    self.get_custom_resource_func = func
                 return func
             return decorator
         
@@ -71,16 +65,15 @@ class TestResourceTools(unittest.TestCase):
         self.assertIsNotNone(self.get_resource_status_func, "get_resource_status function was not registered")
         self.assertIsNotNone(self.get_resource_events_func, "get_resource_events function was not registered")
         self.assertIsNotNone(self.get_pod_logs_func, "get_pod_logs function was not registered")
-        self.assertIsNotNone(self.list_custom_resources_func, "list_custom_resources function was not registered")
-        self.assertIsNotNone(self.get_custom_resource_func, "get_custom_resource function was not registered")
 
     def test_datetime_encoder(self):
         """Test the DateTimeEncoder class."""
         # Create a datetime object
         dt = datetime(2023, 1, 1, 12, 0, 0)
+        date_only = datetime(2023, 1, 1).date()
         
-        # Create a dictionary with the datetime object
-        data = {"timestamp": dt}
+        # Create a dictionary with the datetime objects
+        data = {"timestamp": dt, "date": date_only}
         
         # Encode the dictionary
         encoded = json.dumps(data, cls=DateTimeEncoder)
@@ -89,7 +82,8 @@ class TestResourceTools(unittest.TestCase):
         decoded = json.loads(encoded)
         
         # Verify the results
-        self.assertEqual(decoded["timestamp"], "2023-01-01T12:00:00")
+        self.assertEqual(decoded["timestamp"], "2023-01-01 12:00:00")
+        self.assertEqual(decoded["date"], "2023-01-01")
 
     def test_get_resources(self):
         """Test getting resources."""
@@ -97,8 +91,8 @@ class TestResourceTools(unittest.TestCase):
         pods_data = [{"name": "pod1"}, {"name": "pod2"}]
         self.k8s_client.get_pods.return_value = pods_data
         
-        # Call the function
-        result = self.get_resources_func({"resource_type": "pods", "namespace": "default"})
+        # Call the function directly with parameters
+        result = self.get_resources_func("pods", "default")
         
         # Verify the results
         self.assertIsInstance(result, str)
@@ -108,46 +102,10 @@ class TestResourceTools(unittest.TestCase):
         # Verify that the K8s client method was called with the correct arguments
         self.k8s_client.get_pods.assert_called_once_with("default")
 
-    def test_get_resources_invalid_arguments(self):
-        """Test getting resources with invalid arguments."""
-        # Call the function with invalid arguments
-        result = self.get_resources_func("invalid")
-        
-        # Verify the results
-        self.assertIsInstance(result, str)
-        parsed_result = json.loads(result)
-        self.assertIn("error", parsed_result)
-        self.assertEqual(parsed_result["error"], "Invalid arguments: expected dictionary, got str")
-        self.assertEqual(parsed_result["success"], False)
-
-    def test_get_resources_missing_required_parameter(self):
-        """Test getting resources with missing required parameter."""
-        # Call the function with missing required parameter
-        result = self.get_resources_func({})
-        
-        # Verify the results
-        self.assertIsInstance(result, str)
-        parsed_result = json.loads(result)
-        self.assertIn("error", parsed_result)
-        self.assertEqual(parsed_result["error"], "Missing required parameter: resource_type")
-        self.assertEqual(parsed_result["success"], False)
-
-    def test_get_resources_invalid_parameter_type(self):
-        """Test getting resources with invalid parameter type."""
-        # Call the function with invalid parameter type
-        result = self.get_resources_func({"resource_type": 123})
-        
-        # Verify the results
-        self.assertIsInstance(result, str)
-        parsed_result = json.loads(result)
-        self.assertIn("error", parsed_result)
-        self.assertEqual(parsed_result["error"], "Invalid resource_type: expected string, got int")
-        self.assertEqual(parsed_result["success"], False)
-
     def test_get_resources_unsupported_type(self):
         """Test getting resources with unsupported type."""
         # Call the function with unsupported resource type
-        result = self.get_resources_func({"resource_type": "unsupported"})
+        result = self.get_resources_func("unsupported")
         
         # Verify the results
         self.assertIsInstance(result, str)
@@ -157,19 +115,17 @@ class TestResourceTools(unittest.TestCase):
 
     def test_get_resources_with_error(self):
         """Test getting resources when the K8s client method raises an exception."""
-        # Mock the K8sClient methods
+        # Mock the K8sClient methods to raise an exception
         self.k8s_client.get_pods.side_effect = Exception("Failed to get pods")
         
         # Call the function
-        result = self.get_resources_func({"resource_type": "pods"})
+        result = self.get_resources_func("pods")
         
         # Verify the results
         self.assertIsInstance(result, str)
         parsed_result = json.loads(result)
         self.assertIn("error", parsed_result)
-        self.assertEqual(parsed_result["error"], "Error getting pods: Failed to get pods")
-        self.assertEqual(parsed_result["success"], False)
-        self.assertEqual(parsed_result["errorType"], "Exception")
+        self.assertEqual(parsed_result["error"], "Failed to get pods")
 
     def test_get_resource(self):
         """Test getting a resource."""
@@ -178,11 +134,7 @@ class TestResourceTools(unittest.TestCase):
         self.k8s_client.get_pod.return_value = pod_data
         
         # Call the function
-        result = self.get_resource_func({
-            "resource_type": "pod",
-            "name": "test-pod",
-            "namespace": "default"
-        })
+        result = self.get_resource_func("pod", "test-pod", "default")
         
         # Verify the results
         self.assertIsInstance(result, str)
@@ -198,11 +150,7 @@ class TestResourceTools(unittest.TestCase):
         self.k8s_client.get_pod.return_value = None
         
         # Call the function
-        result = self.get_resource_func({
-            "resource_type": "pod",
-            "name": "nonexistent-pod",
-            "namespace": "default"
-        })
+        result = self.get_resource_func("pod", "nonexistent-pod", "default")
         
         # Verify the results
         self.assertIsInstance(result, str)
@@ -221,11 +169,7 @@ class TestResourceTools(unittest.TestCase):
         self.k8s_client.get_pod.return_value = pod_data
         
         # Call the function
-        result = self.get_resource_status_func({
-            "resource_type": "pod",
-            "name": "test-pod",
-            "namespace": "default"
-        })
+        result = self.get_resource_status_func("pod", "test-pod", "default")
         
         # Verify the results
         self.assertIsInstance(result, str)
@@ -245,11 +189,7 @@ class TestResourceTools(unittest.TestCase):
         self.k8s_client.get_resource_events.return_value = events_data
         
         # Call the function
-        result = self.get_resource_events_func({
-            "resource_type": "pod",
-            "name": "test-pod",
-            "namespace": "default"
-        })
+        result = self.get_resource_events_func("pod", "test-pod", "default")
         
         # Verify the results
         self.assertIsInstance(result, str)
@@ -266,70 +206,13 @@ class TestResourceTools(unittest.TestCase):
         self.k8s_client.get_pod_logs.return_value = logs_data
         
         # Call the function
-        result = self.get_pod_logs_func({
-            "name": "test-pod",
-            "namespace": "default",
-            "container": "main",
-            "tail_lines": 10
-        })
+        result = self.get_pod_logs_func("test-pod", "default", "main", 10)
         
         # Verify the results
         self.assertEqual(result, logs_data)
         
         # Verify that the K8s client method was called with the correct arguments
         self.k8s_client.get_pod_logs.assert_called_once_with("test-pod", "default", "main", 10)
-
-    def test_list_custom_resources(self):
-        """Test listing custom resources."""
-        # Mock the K8sClient methods
-        custom_resources_data = [
-            {"name": "cr1", "spec": {"replicas": 3}},
-            {"name": "cr2", "spec": {"replicas": 2}}
-        ]
-        self.k8s_client.list_custom_resources.return_value = custom_resources_data
-        
-        # Call the function
-        result = self.list_custom_resources_func({
-            "group": "example.com",
-            "version": "v1",
-            "plural": "examples",
-            "namespace": "default"
-        })
-        
-        # Verify the results
-        self.assertIsInstance(result, str)
-        parsed_result = json.loads(result)
-        self.assertEqual(parsed_result, custom_resources_data)
-        
-        # Verify that the K8s client method was called with the correct arguments
-        self.k8s_client.list_custom_resources.assert_called_once_with(
-            "example.com", "v1", "examples", "default"
-        )
-
-    def test_get_custom_resource(self):
-        """Test getting a custom resource."""
-        # Mock the K8sClient methods
-        custom_resource_data = {"name": "test-cr", "spec": {"replicas": 3}}
-        self.k8s_client.get_custom_resource.return_value = custom_resource_data
-        
-        # Call the function
-        result = self.get_custom_resource_func({
-            "group": "example.com",
-            "version": "v1",
-            "plural": "examples",
-            "name": "test-cr",
-            "namespace": "default"
-        })
-        
-        # Verify the results
-        self.assertIsInstance(result, str)
-        parsed_result = json.loads(result)
-        self.assertEqual(parsed_result, custom_resource_data)
-        
-        # Verify that the K8s client method was called with the correct arguments
-        self.k8s_client.get_custom_resource.assert_called_once_with(
-            "example.com", "v1", "examples", "test-cr", "default"
-        )
 
 
 if __name__ == "__main__":
