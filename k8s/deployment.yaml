@@ -26,7 +26,7 @@ spec:
       serviceAccountName: mcp-k8s-server
       containers:
       - name: mcp-k8s-server
-        image: guolisen/mcp-k8s-server:2.5
+        image: guolisen/mcp-k8s-server:2.7
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000

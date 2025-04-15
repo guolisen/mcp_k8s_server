@@ -144,7 +144,9 @@ def register_operation_tools(mcp: FastMCP, k8s_operations: K8sOperations) -> Non
     @mcp.tool()
     def execute_command_on_pod(pod_name: str = None, command: str = None, namespace: Optional[str] = None, 
                         container: Optional[str] = None, value: Any = None) -> str:
-        """Execute a command in a pod.
+        """Execute a command in a pod
+        
+        NOTICE: this tool just run command in POD, not on host, if you want to run command on host please refer other mcp server tools.
         
         Args:
             pod_name: Name of the pod.
