@@ -142,7 +142,7 @@ def register_operation_tools(mcp: FastMCP, k8s_operations: K8sOperations) -> Non
             return json.dumps({"success": False, "message": str(e)})
     
     @mcp.tool()
-    def execute_command(pod_name: str = None, command: str = None, namespace: Optional[str] = None, 
+    def execute_command_on_pod(pod_name: str = None, command: str = None, namespace: Optional[str] = None, 
                         container: Optional[str] = None, value: Any = None) -> str:
         """Execute a command in a pod.
         
