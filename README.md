@@ -10,6 +10,16 @@ A Kubernetes management MCP (Model Context Protocol) server that provides interf
 - **Analysis**: Analyze Kubernetes resources and provide recommendations
 - **Prompts**: Includes prompts for common Kubernetes analysis tasks
 
+## Examples
+### Ex.1
+![ex1](./docs/images/ex1.png)
+
+### Ex.2
+![ex2](./docs/images/ex2.png)
+
+### Ex.3
+![ex3](./docs/images/ex3.png)
+
 ## Installation
 
 ### From Source
